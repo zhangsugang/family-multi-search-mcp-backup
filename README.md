@@ -107,12 +107,10 @@ Public endpoints:
 - REST: `https://mcp-search.bri-king.com/v1`
 - Health: `https://mcp-search.bri-king.com/healthz`
 
+Public installer/plugin/Skill repository only. The server implementation, browser profiles, provider credentials, family Keys, and runtime state are intentionally excluded.
+
 ## Test
 
 ```bash
-python3 -m pytest service/tests -q
-claude plugin validate .
-claude plugin validate plugins/family-multi-search
+python3 -m py_compile skill/scripts/remote_search.py skill/scripts/zcode_mcp_proxy.py
 ```
-
-The `claude plugin validate` commands above are only manifest validators; they are not the ZCode installation commands.
