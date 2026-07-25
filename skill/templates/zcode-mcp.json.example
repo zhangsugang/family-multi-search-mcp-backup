@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "family-multi-search": {
+      "url": "https://mcp-search.bri-king.com/mcp",
+      "headers": {
+        "Authorization": "Bearer PASTE_FAMILY_KEY_HERE"
+      }
+    }
+  }
+}

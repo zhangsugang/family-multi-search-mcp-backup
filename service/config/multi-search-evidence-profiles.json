@@ -1,0 +1,1157 @@
+{
+  "schema_version": 1,
+  "profiles": {
+    "general": {
+      "providers": {
+        "doubao": {
+          "source_id": "doubao",
+          "ecosystem": "douyin_toutiao",
+          "provider_role": "platform_search",
+          "retention_priority": 60,
+          "claim_scope": [],
+          "evidence_role": "platform_evidence",
+          "preserve_references": true,
+          "aliases": ["Doubao", "豆包"]
+        },
+        "yuanbao": {
+          "source_id": "yuanbao",
+          "ecosystem": "wechat",
+          "provider_role": "platform_search",
+          "retention_priority": 60,
+          "claim_scope": [],
+          "evidence_role": "platform_evidence",
+          "preserve_references": true,
+          "aliases": ["Yuanbao", "元宝"]
+        },
+        "wenxin": {
+          "source_id": "wenxin",
+          "ecosystem": "baidu_web",
+          "provider_role": "discovery_corroboration",
+          "retention_priority": 40,
+          "claim_scope": [],
+          "evidence_role": "direct_source_evidence",
+          "preserve_references": true,
+          "aliases": ["Wenxin", "文心"]
+        },
+        "tavily": {
+          "source_id": "tavily",
+          "ecosystem": "global_web",
+          "provider_role": "discovery_corroboration",
+          "retention_priority": 30,
+          "claim_scope": [],
+          "evidence_role": "direct_source_evidence",
+          "preserve_references": true,
+          "aliases": ["Tavily"]
+        },
+        "exa": {
+          "source_id": "exa",
+          "ecosystem": "semantic_web",
+          "provider_role": "discovery_corroboration",
+          "retention_priority": 30,
+          "claim_scope": [],
+          "evidence_role": "direct_source_evidence",
+          "preserve_references": true,
+          "aliases": ["Exa"]
+        },
+        "gemini": {
+          "source_id": "gemini",
+          "ecosystem": "youtube",
+          "provider_role": "community_discovery",
+          "retention_priority": 55,
+          "claim_scope": [],
+          "evidence_role": "platform_evidence",
+          "preserve_references": true,
+          "preserve_platform_observations": true,
+          "max_platform_observations": 6,
+          "max_platform_observation_chars": 420,
+          "max_related_citation_urls": 5,
+          "model_input_scopes": ["community_context"],
+          "aliases": ["Gemini", "YouTube"]
+        },
+        "grok": {
+          "source_id": "grok",
+          "ecosystem": "x_twitter",
+          "provider_role": "community_discovery",
+          "retention_priority": 55,
+          "claim_scope": [],
+          "evidence_role": "platform_evidence",
+          "preserve_references": true,
+          "preserve_platform_observations": true,
+          "max_platform_observations": 6,
+          "max_platform_observation_chars": 420,
+          "max_related_citation_urls": 5,
+          "model_input_scopes": ["community_context"],
+          "aliases": ["Grok", "X", "Twitter"]
+        },
+        "qianwen": {
+          "source_id": "qianwen",
+          "ecosystem": "alibaba_ecosystem",
+          "provider_role": "platform_search",
+          "retention_priority": 60,
+          "claim_scope": [],
+          "evidence_role": "platform_evidence",
+          "preserve_references": true,
+          "preserve_platform_observations": true,
+          "max_platform_observations": 6,
+          "max_platform_observation_chars": 420,
+          "max_related_citation_urls": 5,
+          "model_input_scopes": [
+            "platform_context"
+          ],
+          "aliases": [
+            "Qianwen",
+            "千问",
+            "阿里生态"
+          ]
+        }
+      }
+    },
+    "china_local_business": {
+      "providers": {
+        "doubao": {
+          "source_id": "doubao",
+          "ecosystem": "douyin_toutiao",
+          "provider_role": "platform_search",
+          "retention_priority": 100,
+          "claim_scope": [
+            "coupon",
+            "local_life",
+            "merchant_campaign",
+            "short_video"
+          ],
+          "evidence_role": "unique_platform_evidence",
+          "preserve_references": true,
+          "preserve_platform_observations": true,
+          "observation_priority": 100,
+          "max_platform_observations": 6,
+          "max_platform_observation_chars": 420,
+          "max_related_citation_urls": 3,
+          "model_input_scopes": ["published_price_and_terms", "observed_platform_traffic", "package_mix"],
+          "aliases": ["Doubao", "豆包"]
+        },
+        "yuanbao": {
+          "source_id": "yuanbao",
+          "ecosystem": "wechat",
+          "provider_role": "platform_search",
+          "retention_priority": 100,
+          "claim_scope": [
+            "official_account",
+            "video_account",
+            "local_context"
+          ],
+          "evidence_role": "unique_platform_evidence",
+          "preserve_references": true,
+          "preserve_platform_observations": true,
+          "observation_priority": 100,
+          "max_platform_observations": 6,
+          "max_platform_observation_chars": 420,
+          "max_related_citation_urls": 3,
+          "model_input_scopes": ["published_price_and_terms", "official_or_local_context", "observed_platform_traffic"],
+          "aliases": ["Yuanbao", "元宝"]
+        },
+        "wenxin": {
+          "source_id": "wenxin",
+          "ecosystem": "baidu_web",
+          "provider_role": "discovery_corroboration",
+          "retention_priority": 40,
+          "claim_scope": [],
+          "evidence_role": "direct_source_evidence",
+          "preserve_references": true,
+          "aliases": ["Wenxin", "文心"]
+        },
+        "tavily": {
+          "source_id": "tavily",
+          "ecosystem": "global_web",
+          "provider_role": "discovery_corroboration",
+          "retention_priority": 30,
+          "claim_scope": [],
+          "evidence_role": "direct_source_evidence",
+          "preserve_references": true,
+          "aliases": ["Tavily"]
+        },
+        "exa": {
+          "source_id": "exa",
+          "ecosystem": "semantic_web",
+          "provider_role": "discovery_corroboration",
+          "retention_priority": 30,
+          "claim_scope": [],
+          "evidence_role": "direct_source_evidence",
+          "preserve_references": true,
+          "aliases": ["Exa"]
+        },
+        "gemini": {
+          "source_id": "gemini",
+          "ecosystem": "youtube",
+          "provider_role": "community_discovery",
+          "retention_priority": 55,
+          "claim_scope": [
+            "coupon",
+            "local_life",
+            "merchant_campaign",
+            "short_video",
+            "official_account",
+            "video_account",
+            "local_context"
+          ],
+          "evidence_role": "platform_evidence",
+          "preserve_references": true,
+          "preserve_platform_observations": true,
+          "max_platform_observations": 6,
+          "max_platform_observation_chars": 420,
+          "max_related_citation_urls": 5,
+          "model_input_scopes": ["community_context"],
+          "aliases": ["Gemini", "YouTube"]
+        },
+        "grok": {
+          "source_id": "grok",
+          "ecosystem": "x_twitter",
+          "provider_role": "community_discovery",
+          "retention_priority": 55,
+          "claim_scope": [
+            "coupon",
+            "local_life",
+            "merchant_campaign",
+            "short_video",
+            "official_account",
+            "video_account",
+            "local_context"
+          ],
+          "evidence_role": "platform_evidence",
+          "preserve_references": true,
+          "preserve_platform_observations": true,
+          "max_platform_observations": 6,
+          "max_platform_observation_chars": 420,
+          "max_related_citation_urls": 5,
+          "model_input_scopes": ["community_context"],
+          "aliases": ["Grok", "X", "Twitter"]
+        },
+        "qianwen": {
+          "source_id": "qianwen",
+          "ecosystem": "alibaba_ecosystem",
+          "provider_role": "platform_search",
+          "retention_priority": 100,
+          "claim_scope": [
+            "coupon",
+            "local_life",
+            "merchant_campaign",
+            "short_video",
+            "official_account",
+            "video_account",
+            "local_context"
+          ],
+          "evidence_role": "unique_platform_evidence",
+          "preserve_references": true,
+          "preserve_platform_observations": true,
+          "max_platform_observations": 6,
+          "max_platform_observation_chars": 420,
+          "max_related_citation_urls": 5,
+          "model_input_scopes": [
+            "platform_context"
+          ],
+          "aliases": [
+            "Qianwen",
+            "千问",
+            "阿里生态"
+          ]
+        }
+      }
+    },
+    "china_general_research": {
+      "coverage_dimensions": [
+        "overview",
+        "evidence",
+        "risks"
+      ],
+      "providers": {
+        "doubao": {
+          "source_id": "doubao",
+          "ecosystem": "douyin_toutiao",
+          "provider_role": "platform_search",
+          "retention_priority": 100,
+          "claim_scope": [
+            "overview",
+            "evidence",
+            "risks"
+          ],
+          "evidence_role": "unique_platform_evidence",
+          "preserve_references": true,
+          "preserve_platform_observations": true,
+          "observation_priority": 100,
+          "max_platform_observations": 6,
+          "max_platform_observation_chars": 420,
+          "max_related_citation_urls": 3,
+          "model_input_scopes": ["published_price_and_terms", "observed_platform_traffic", "platform_context"],
+          "aliases": ["Doubao", "豆包"]
+        },
+        "yuanbao": {
+          "source_id": "yuanbao",
+          "ecosystem": "wechat",
+          "provider_role": "platform_search",
+          "retention_priority": 100,
+          "claim_scope": [
+            "overview",
+            "evidence",
+            "risks"
+          ],
+          "evidence_role": "unique_platform_evidence",
+          "preserve_references": true,
+          "preserve_platform_observations": true,
+          "observation_priority": 100,
+          "max_platform_observations": 6,
+          "max_platform_observation_chars": 420,
+          "max_related_citation_urls": 3,
+          "model_input_scopes": ["published_price_and_terms", "official_or_local_context", "observed_platform_traffic"],
+          "aliases": ["Yuanbao", "元宝"]
+        },
+        "wenxin": {
+          "source_id": "wenxin",
+          "ecosystem": "baidu_web",
+          "provider_role": "discovery_corroboration",
+          "retention_priority": 40,
+          "claim_scope": [
+            "overview",
+            "evidence",
+            "risks"
+          ],
+          "evidence_role": "direct_source_evidence",
+          "preserve_references": true,
+          "aliases": ["Wenxin", "文心"]
+        },
+        "tavily": {
+          "source_id": "tavily",
+          "ecosystem": "global_web",
+          "provider_role": "discovery_corroboration",
+          "retention_priority": 30,
+          "claim_scope": [
+            "overview",
+            "evidence",
+            "risks"
+          ],
+          "evidence_role": "direct_source_evidence",
+          "preserve_references": true,
+          "aliases": ["Tavily"]
+        },
+        "exa": {
+          "source_id": "exa",
+          "ecosystem": "semantic_web",
+          "provider_role": "discovery_corroboration",
+          "retention_priority": 30,
+          "claim_scope": [
+            "overview",
+            "evidence",
+            "risks"
+          ],
+          "evidence_role": "direct_source_evidence",
+          "preserve_references": true,
+          "aliases": ["Exa"]
+        },
+        "gemini": {
+          "source_id": "gemini",
+          "ecosystem": "youtube",
+          "provider_role": "community_discovery",
+          "retention_priority": 55,
+          "claim_scope": [
+            "overview",
+            "evidence",
+            "risks"
+          ],
+          "evidence_role": "platform_evidence",
+          "preserve_references": true,
+          "preserve_platform_observations": true,
+          "max_platform_observations": 6,
+          "max_platform_observation_chars": 420,
+          "max_related_citation_urls": 5,
+          "model_input_scopes": ["community_context"],
+          "aliases": ["Gemini", "YouTube"]
+        },
+        "grok": {
+          "source_id": "grok",
+          "ecosystem": "x_twitter",
+          "provider_role": "community_discovery",
+          "retention_priority": 55,
+          "claim_scope": [
+            "overview",
+            "evidence",
+            "risks"
+          ],
+          "evidence_role": "platform_evidence",
+          "preserve_references": true,
+          "preserve_platform_observations": true,
+          "max_platform_observations": 6,
+          "max_platform_observation_chars": 420,
+          "max_related_citation_urls": 5,
+          "model_input_scopes": ["community_context"],
+          "aliases": ["Grok", "X", "Twitter"]
+        },
+        "qianwen": {
+          "source_id": "qianwen",
+          "ecosystem": "alibaba_ecosystem",
+          "provider_role": "platform_search",
+          "retention_priority": 60,
+          "claim_scope": [
+            "overview",
+            "evidence",
+            "risks"
+          ],
+          "evidence_role": "platform_evidence",
+          "preserve_references": true,
+          "preserve_platform_observations": true,
+          "max_platform_observations": 6,
+          "max_platform_observation_chars": 420,
+          "max_related_citation_urls": 5,
+          "model_input_scopes": [
+            "platform_context"
+          ],
+          "aliases": [
+            "Qianwen",
+            "千问",
+            "阿里生态"
+          ]
+        }
+      }
+    },
+    "project_feasibility": {
+      "coverage_dimensions": [
+        "demand",
+        "feasibility",
+        "budget",
+        "timeline",
+        "stakeholders",
+        "risks"
+      ],
+      "providers": {
+        "doubao": {
+          "source_id": "doubao",
+          "ecosystem": "douyin_toutiao",
+          "provider_role": "platform_search",
+          "retention_priority": 60,
+          "claim_scope": [
+            "demand",
+            "feasibility",
+            "budget",
+            "timeline",
+            "stakeholders",
+            "risks"
+          ],
+          "evidence_role": "platform_evidence",
+          "preserve_references": true,
+          "preserve_platform_observations": true,
+          "max_platform_observations": 6,
+          "max_platform_observation_chars": 420,
+          "max_related_citation_urls": 3,
+          "model_input_scopes": ["platform_context"],
+          "aliases": ["Doubao", "豆包"]
+        },
+        "yuanbao": {
+          "source_id": "yuanbao",
+          "ecosystem": "wechat",
+          "provider_role": "platform_search",
+          "retention_priority": 60,
+          "claim_scope": [
+            "demand",
+            "feasibility",
+            "budget",
+            "timeline",
+            "stakeholders",
+            "risks"
+          ],
+          "evidence_role": "platform_evidence",
+          "preserve_references": true,
+          "preserve_platform_observations": true,
+          "max_platform_observations": 6,
+          "max_platform_observation_chars": 420,
+          "max_related_citation_urls": 3,
+          "model_input_scopes": ["platform_context"],
+          "aliases": ["Yuanbao", "元宝"]
+        },
+        "wenxin": {
+          "source_id": "wenxin",
+          "ecosystem": "baidu_web",
+          "provider_role": "discovery_corroboration",
+          "retention_priority": 40,
+          "claim_scope": [
+            "demand",
+            "feasibility",
+            "budget",
+            "timeline",
+            "stakeholders",
+            "risks"
+          ],
+          "evidence_role": "direct_source_evidence",
+          "preserve_references": true,
+          "aliases": ["Wenxin", "文心"]
+        },
+        "tavily": {
+          "source_id": "tavily",
+          "ecosystem": "global_web",
+          "provider_role": "discovery_corroboration",
+          "retention_priority": 30,
+          "claim_scope": [
+            "demand",
+            "feasibility",
+            "budget",
+            "timeline",
+            "stakeholders",
+            "risks"
+          ],
+          "evidence_role": "direct_source_evidence",
+          "preserve_references": true,
+          "aliases": ["Tavily"]
+        },
+        "exa": {
+          "source_id": "exa",
+          "ecosystem": "semantic_web",
+          "provider_role": "discovery_corroboration",
+          "retention_priority": 30,
+          "claim_scope": [
+            "demand",
+            "feasibility",
+            "budget",
+            "timeline",
+            "stakeholders",
+            "risks"
+          ],
+          "evidence_role": "direct_source_evidence",
+          "preserve_references": true,
+          "aliases": ["Exa"]
+        },
+        "gemini": {
+          "source_id": "gemini",
+          "ecosystem": "youtube",
+          "provider_role": "community_discovery",
+          "retention_priority": 55,
+          "claim_scope": [
+            "demand",
+            "feasibility",
+            "budget",
+            "timeline",
+            "stakeholders",
+            "risks"
+          ],
+          "evidence_role": "platform_evidence",
+          "preserve_references": true,
+          "preserve_platform_observations": true,
+          "max_platform_observations": 6,
+          "max_platform_observation_chars": 420,
+          "max_related_citation_urls": 5,
+          "model_input_scopes": ["community_context"],
+          "aliases": ["Gemini", "YouTube"]
+        },
+        "grok": {
+          "source_id": "grok",
+          "ecosystem": "x_twitter",
+          "provider_role": "community_discovery",
+          "retention_priority": 55,
+          "claim_scope": [
+            "demand",
+            "feasibility",
+            "budget",
+            "timeline",
+            "stakeholders",
+            "risks"
+          ],
+          "evidence_role": "platform_evidence",
+          "preserve_references": true,
+          "preserve_platform_observations": true,
+          "max_platform_observations": 6,
+          "max_platform_observation_chars": 420,
+          "max_related_citation_urls": 5,
+          "model_input_scopes": ["community_context"],
+          "aliases": ["Grok", "X", "Twitter"]
+        },
+        "qianwen": {
+          "source_id": "qianwen",
+          "ecosystem": "alibaba_ecosystem",
+          "provider_role": "platform_search",
+          "retention_priority": 60,
+          "claim_scope": [
+            "demand",
+            "feasibility",
+            "budget",
+            "timeline",
+            "stakeholders",
+            "risks"
+          ],
+          "evidence_role": "platform_evidence",
+          "preserve_references": true,
+          "preserve_platform_observations": true,
+          "max_platform_observations": 6,
+          "max_platform_observation_chars": 420,
+          "max_related_citation_urls": 5,
+          "model_input_scopes": [
+            "platform_context"
+          ],
+          "aliases": [
+            "Qianwen",
+            "千问",
+            "阿里生态"
+          ]
+        }
+      }
+    },
+    "investment_due_diligence": {
+      "coverage_dimensions": [
+        "thesis",
+        "market",
+        "business_model",
+        "financials",
+        "valuation",
+        "risks"
+      ],
+      "providers": {
+        "doubao": {
+          "source_id": "doubao",
+          "ecosystem": "douyin_toutiao",
+          "provider_role": "platform_search",
+          "retention_priority": 60,
+          "claim_scope": [
+            "thesis",
+            "market",
+            "business_model",
+            "financials",
+            "valuation",
+            "risks"
+          ],
+          "evidence_role": "platform_evidence",
+          "preserve_references": true,
+          "preserve_platform_observations": true,
+          "max_platform_observations": 6,
+          "max_platform_observation_chars": 420,
+          "max_related_citation_urls": 3,
+          "model_input_scopes": ["platform_context"],
+          "aliases": ["Doubao", "豆包"]
+        },
+        "yuanbao": {
+          "source_id": "yuanbao",
+          "ecosystem": "wechat",
+          "provider_role": "platform_search",
+          "retention_priority": 60,
+          "claim_scope": [
+            "thesis",
+            "market",
+            "business_model",
+            "financials",
+            "valuation",
+            "risks"
+          ],
+          "evidence_role": "platform_evidence",
+          "preserve_references": true,
+          "preserve_platform_observations": true,
+          "max_platform_observations": 6,
+          "max_platform_observation_chars": 420,
+          "max_related_citation_urls": 3,
+          "model_input_scopes": ["platform_context"],
+          "aliases": ["Yuanbao", "元宝"]
+        },
+        "wenxin": {
+          "source_id": "wenxin",
+          "ecosystem": "baidu_web",
+          "provider_role": "discovery_corroboration",
+          "retention_priority": 40,
+          "claim_scope": [
+            "thesis",
+            "market",
+            "business_model",
+            "financials",
+            "valuation",
+            "risks"
+          ],
+          "evidence_role": "direct_source_evidence",
+          "preserve_references": true,
+          "aliases": ["Wenxin", "文心"]
+        },
+        "tavily": {
+          "source_id": "tavily",
+          "ecosystem": "global_web",
+          "provider_role": "discovery_corroboration",
+          "retention_priority": 30,
+          "claim_scope": [
+            "thesis",
+            "market",
+            "business_model",
+            "financials",
+            "valuation",
+            "risks"
+          ],
+          "evidence_role": "direct_source_evidence",
+          "preserve_references": true,
+          "aliases": ["Tavily"]
+        },
+        "exa": {
+          "source_id": "exa",
+          "ecosystem": "semantic_web",
+          "provider_role": "discovery_corroboration",
+          "retention_priority": 30,
+          "claim_scope": [
+            "thesis",
+            "market",
+            "business_model",
+            "financials",
+            "valuation",
+            "risks"
+          ],
+          "evidence_role": "direct_source_evidence",
+          "preserve_references": true,
+          "aliases": ["Exa"]
+        },
+        "gemini": {
+          "source_id": "gemini",
+          "ecosystem": "youtube",
+          "provider_role": "community_discovery",
+          "retention_priority": 55,
+          "claim_scope": [
+            "thesis",
+            "market",
+            "business_model",
+            "financials",
+            "valuation",
+            "risks"
+          ],
+          "evidence_role": "platform_evidence",
+          "preserve_references": true,
+          "preserve_platform_observations": true,
+          "max_platform_observations": 6,
+          "max_platform_observation_chars": 420,
+          "max_related_citation_urls": 5,
+          "model_input_scopes": ["community_context"],
+          "aliases": ["Gemini", "YouTube"]
+        },
+        "grok": {
+          "source_id": "grok",
+          "ecosystem": "x_twitter",
+          "provider_role": "community_discovery",
+          "retention_priority": 55,
+          "claim_scope": [
+            "thesis",
+            "market",
+            "business_model",
+            "financials",
+            "valuation",
+            "risks"
+          ],
+          "evidence_role": "platform_evidence",
+          "preserve_references": true,
+          "preserve_platform_observations": true,
+          "max_platform_observations": 6,
+          "max_platform_observation_chars": 420,
+          "max_related_citation_urls": 5,
+          "model_input_scopes": ["community_context"],
+          "aliases": ["Grok", "X", "Twitter"]
+        },
+        "qianwen": {
+          "source_id": "qianwen",
+          "ecosystem": "alibaba_ecosystem",
+          "provider_role": "platform_search",
+          "retention_priority": 60,
+          "claim_scope": [
+            "thesis",
+            "market",
+            "business_model",
+            "financials",
+            "valuation",
+            "risks"
+          ],
+          "evidence_role": "platform_evidence",
+          "preserve_references": true,
+          "preserve_platform_observations": true,
+          "max_platform_observations": 6,
+          "max_platform_observation_chars": 420,
+          "max_related_citation_urls": 5,
+          "model_input_scopes": [
+            "platform_context"
+          ],
+          "aliases": [
+            "Qianwen",
+            "千问",
+            "阿里生态"
+          ]
+        }
+      }
+    },
+    "industry_landscape": {
+      "coverage_dimensions": [
+        "definition",
+        "market",
+        "growth",
+        "drivers",
+        "policy",
+        "segments",
+        "competition",
+        "trends"
+      ],
+      "providers": {
+        "doubao": {
+          "source_id": "doubao",
+          "ecosystem": "douyin_toutiao",
+          "provider_role": "platform_search",
+          "retention_priority": 60,
+          "claim_scope": [
+            "definition",
+            "market",
+            "growth",
+            "drivers",
+            "policy",
+            "segments",
+            "competition",
+            "trends"
+          ],
+          "evidence_role": "platform_evidence",
+          "preserve_references": true,
+          "preserve_platform_observations": true,
+          "max_platform_observations": 6,
+          "max_platform_observation_chars": 420,
+          "max_related_citation_urls": 3,
+          "model_input_scopes": ["platform_context"],
+          "aliases": ["Doubao", "豆包"]
+        },
+        "yuanbao": {
+          "source_id": "yuanbao",
+          "ecosystem": "wechat",
+          "provider_role": "platform_search",
+          "retention_priority": 60,
+          "claim_scope": [
+            "definition",
+            "market",
+            "growth",
+            "drivers",
+            "policy",
+            "segments",
+            "competition",
+            "trends"
+          ],
+          "evidence_role": "platform_evidence",
+          "preserve_references": true,
+          "preserve_platform_observations": true,
+          "max_platform_observations": 6,
+          "max_platform_observation_chars": 420,
+          "max_related_citation_urls": 3,
+          "model_input_scopes": ["platform_context"],
+          "aliases": ["Yuanbao", "元宝"]
+        },
+        "wenxin": {
+          "source_id": "wenxin",
+          "ecosystem": "baidu_web",
+          "provider_role": "discovery_corroboration",
+          "retention_priority": 40,
+          "claim_scope": [
+            "definition",
+            "market",
+            "growth",
+            "drivers",
+            "policy",
+            "segments",
+            "competition",
+            "trends"
+          ],
+          "evidence_role": "direct_source_evidence",
+          "preserve_references": true,
+          "aliases": ["Wenxin", "文心"]
+        },
+        "tavily": {
+          "source_id": "tavily",
+          "ecosystem": "global_web",
+          "provider_role": "discovery_corroboration",
+          "retention_priority": 30,
+          "claim_scope": [
+            "definition",
+            "market",
+            "growth",
+            "drivers",
+            "policy",
+            "segments",
+            "competition",
+            "trends"
+          ],
+          "evidence_role": "direct_source_evidence",
+          "preserve_references": true,
+          "aliases": ["Tavily"]
+        },
+        "exa": {
+          "source_id": "exa",
+          "ecosystem": "semantic_web",
+          "provider_role": "discovery_corroboration",
+          "retention_priority": 30,
+          "claim_scope": [
+            "definition",
+            "market",
+            "growth",
+            "drivers",
+            "policy",
+            "segments",
+            "competition",
+            "trends"
+          ],
+          "evidence_role": "direct_source_evidence",
+          "preserve_references": true,
+          "aliases": ["Exa"]
+        },
+        "gemini": {
+          "source_id": "gemini",
+          "ecosystem": "youtube",
+          "provider_role": "community_discovery",
+          "retention_priority": 55,
+          "claim_scope": [
+            "definition",
+            "market",
+            "growth",
+            "drivers",
+            "policy",
+            "segments",
+            "competition",
+            "trends"
+          ],
+          "evidence_role": "platform_evidence",
+          "preserve_references": true,
+          "preserve_platform_observations": true,
+          "max_platform_observations": 6,
+          "max_platform_observation_chars": 420,
+          "max_related_citation_urls": 5,
+          "model_input_scopes": ["community_context"],
+          "aliases": ["Gemini", "YouTube"]
+        },
+        "grok": {
+          "source_id": "grok",
+          "ecosystem": "x_twitter",
+          "provider_role": "community_discovery",
+          "retention_priority": 55,
+          "claim_scope": [
+            "definition",
+            "market",
+            "growth",
+            "drivers",
+            "policy",
+            "segments",
+            "competition",
+            "trends"
+          ],
+          "evidence_role": "platform_evidence",
+          "preserve_references": true,
+          "preserve_platform_observations": true,
+          "max_platform_observations": 6,
+          "max_platform_observation_chars": 420,
+          "max_related_citation_urls": 5,
+          "model_input_scopes": ["community_context"],
+          "aliases": ["Grok", "X", "Twitter"]
+        },
+        "qianwen": {
+          "source_id": "qianwen",
+          "ecosystem": "alibaba_ecosystem",
+          "provider_role": "platform_search",
+          "retention_priority": 60,
+          "claim_scope": [
+            "definition",
+            "market",
+            "growth",
+            "drivers",
+            "policy",
+            "segments",
+            "competition",
+            "trends"
+          ],
+          "evidence_role": "platform_evidence",
+          "preserve_references": true,
+          "preserve_platform_observations": true,
+          "max_platform_observations": 6,
+          "max_platform_observation_chars": 420,
+          "max_related_citation_urls": 5,
+          "model_input_scopes": [
+            "platform_context"
+          ],
+          "aliases": [
+            "Qianwen",
+            "千问",
+            "阿里生态"
+          ]
+        }
+      }
+    },
+    "competitor_analysis": {
+      "coverage_dimensions": [
+        "positioning",
+        "products",
+        "pricing",
+        "channels",
+        "strengths",
+        "weaknesses",
+        "actions"
+      ],
+      "providers": {
+        "doubao": {
+          "source_id": "doubao",
+          "ecosystem": "douyin_toutiao",
+          "provider_role": "platform_search",
+          "retention_priority": 60,
+          "claim_scope": [
+            "positioning",
+            "products",
+            "pricing",
+            "channels",
+            "strengths",
+            "weaknesses",
+            "actions"
+          ],
+          "evidence_role": "platform_evidence",
+          "preserve_references": true,
+          "preserve_platform_observations": true,
+          "max_platform_observations": 6,
+          "max_platform_observation_chars": 420,
+          "max_related_citation_urls": 3,
+          "model_input_scopes": ["platform_context"],
+          "aliases": ["Doubao", "豆包"]
+        },
+        "yuanbao": {
+          "source_id": "yuanbao",
+          "ecosystem": "wechat",
+          "provider_role": "platform_search",
+          "retention_priority": 60,
+          "claim_scope": [
+            "positioning",
+            "products",
+            "pricing",
+            "channels",
+            "strengths",
+            "weaknesses",
+            "actions"
+          ],
+          "evidence_role": "platform_evidence",
+          "preserve_references": true,
+          "preserve_platform_observations": true,
+          "max_platform_observations": 6,
+          "max_platform_observation_chars": 420,
+          "max_related_citation_urls": 3,
+          "model_input_scopes": ["platform_context"],
+          "aliases": ["Yuanbao", "元宝"]
+        },
+        "wenxin": {
+          "source_id": "wenxin",
+          "ecosystem": "baidu_web",
+          "provider_role": "discovery_corroboration",
+          "retention_priority": 40,
+          "claim_scope": [
+            "positioning",
+            "products",
+            "pricing",
+            "channels",
+            "strengths",
+            "weaknesses",
+            "actions"
+          ],
+          "evidence_role": "direct_source_evidence",
+          "preserve_references": true,
+          "aliases": ["Wenxin", "文心"]
+        },
+        "tavily": {
+          "source_id": "tavily",
+          "ecosystem": "global_web",
+          "provider_role": "discovery_corroboration",
+          "retention_priority": 30,
+          "claim_scope": [
+            "positioning",
+            "products",
+            "pricing",
+            "channels",
+            "strengths",
+            "weaknesses",
+            "actions"
+          ],
+          "evidence_role": "direct_source_evidence",
+          "preserve_references": true,
+          "aliases": ["Tavily"]
+        },
+        "exa": {
+          "source_id": "exa",
+          "ecosystem": "semantic_web",
+          "provider_role": "discovery_corroboration",
+          "retention_priority": 30,
+          "claim_scope": [
+            "positioning",
+            "products",
+            "pricing",
+            "channels",
+            "strengths",
+            "weaknesses",
+            "actions"
+          ],
+          "evidence_role": "direct_source_evidence",
+          "preserve_references": true,
+          "aliases": ["Exa"]
+        },
+        "gemini": {
+          "source_id": "gemini",
+          "ecosystem": "youtube",
+          "provider_role": "community_discovery",
+          "retention_priority": 55,
+          "claim_scope": [
+            "positioning",
+            "products",
+            "pricing",
+            "channels",
+            "strengths",
+            "weaknesses",
+            "actions"
+          ],
+          "evidence_role": "platform_evidence",
+          "preserve_references": true,
+          "preserve_platform_observations": true,
+          "max_platform_observations": 6,
+          "max_platform_observation_chars": 420,
+          "max_related_citation_urls": 5,
+          "model_input_scopes": ["community_context"],
+          "aliases": ["Gemini", "YouTube"]
+        },
+        "grok": {
+          "source_id": "grok",
+          "ecosystem": "x_twitter",
+          "provider_role": "community_discovery",
+          "retention_priority": 55,
+          "claim_scope": [
+            "positioning",
+            "products",
+            "pricing",
+            "channels",
+            "strengths",
+            "weaknesses",
+            "actions"
+          ],
+          "evidence_role": "platform_evidence",
+          "preserve_references": true,
+          "preserve_platform_observations": true,
+          "max_platform_observations": 6,
+          "max_platform_observation_chars": 420,
+          "max_related_citation_urls": 5,
+          "model_input_scopes": ["community_context"],
+          "aliases": ["Grok", "X", "Twitter"]
+        },
+        "qianwen": {
+          "source_id": "qianwen",
+          "ecosystem": "alibaba_ecosystem",
+          "provider_role": "platform_search",
+          "retention_priority": 60,
+          "claim_scope": [
+            "positioning",
+            "products",
+            "pricing",
+            "channels",
+            "strengths",
+            "weaknesses",
+            "actions"
+          ],
+          "evidence_role": "platform_evidence",
+          "preserve_references": true,
+          "preserve_platform_observations": true,
+          "max_platform_observations": 6,
+          "max_platform_observation_chars": 420,
+          "max_related_citation_urls": 5,
+          "model_input_scopes": [
+            "platform_context"
+          ],
+          "aliases": [
+            "Qianwen",
+            "千问",
+            "阿里生态"
+          ]
+        }
+      }
+    }
+  }
+}
