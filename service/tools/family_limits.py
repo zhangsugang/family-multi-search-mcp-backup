@@ -27,17 +27,18 @@ class InvocationLimiter:
     ):
         self._global_research = asyncio.Semaphore(global_research_limit)
         self._provider = asyncio.Semaphore(provider_limit)
-        self._per_key: dict[str, _PerKeyState] = {}
+        self._per_address: dict[str, _PerKeyState] = {}
         self.queue_timeout = queue_timeout
 
-    def _key_semaphore(self, principal: FamilyPrincipal) -> asyncio.Semaphore:
-        state = self._per_key.get(principal.key_id)
+    def _address_semaphore(self, principal: FamilyPrincipal) -> asyncio.Semaphore:
+        identity = principal.owner_id
+        state = self._per_address.get(identity)
         if state is None or state.limit != principal.max_concurrent_research:
             state = _PerKeyState(
                 principal.max_concurrent_research,
                 asyncio.Semaphore(principal.max_concurrent_research),
             )
-            self._per_key[principal.key_id] = state
+            self._per_address[identity] = state
         return state.semaphore
 
     async def _acquire(self, semaphore: asyncio.Semaphore) -> None:
@@ -49,18 +50,18 @@ class InvocationLimiter:
     @asynccontextmanager
     async def slot(self, principal: FamilyPrincipal, category: str):
         if category == "research":
-            key_semaphore = self._key_semaphore(principal)
-            await self._acquire(key_semaphore)
+            address_semaphore = self._address_semaphore(principal)
+            await self._acquire(address_semaphore)
             try:
                 await self._acquire(self._global_research)
             except BaseException:
-                key_semaphore.release()
+                address_semaphore.release()
                 raise
             try:
                 yield
             finally:
                 self._global_research.release()
-                key_semaphore.release()
+                address_semaphore.release()
             return
         if category == "provider":
             await self._acquire(self._provider)

@@ -7,7 +7,7 @@ import os
 import re
 import secrets
 import tempfile
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Iterable
@@ -27,12 +27,22 @@ class ScopeError(PermissionError):
     pass
 
 
+class AddressLimitError(PermissionError):
+    pass
+
+
 @dataclass(frozen=True)
 class FamilyPrincipal:
     key_id: str
     label: str
     scopes: frozenset[str]
     max_concurrent_research: int
+    max_bound_addresses: int = 10
+    address_id: str = ""
+
+    @property
+    def owner_id(self) -> str:
+        return f"{self.key_id}:{self.address_id}" if self.address_id else self.key_id
 
     def require(self, scope: str) -> None:
         if scope not in self.scopes:
@@ -82,12 +92,15 @@ class FamilyKeyRegistry:
         *,
         scopes: Iterable[str] = DEFAULT_SCOPES,
         max_concurrent_research: int = 1,
+        max_bound_addresses: int = 10,
     ) -> tuple[str, FamilyPrincipal]:
         clean_label = label.strip()
         if not clean_label:
             raise ValueError("label is required")
         if isinstance(max_concurrent_research, bool) or max_concurrent_research < 1:
             raise ValueError("max_concurrent_research must be positive")
+        if isinstance(max_bound_addresses, bool) or max_bound_addresses < 1:
+            raise ValueError("max_bound_addresses must be positive")
         registry = self._load()
         existing = {item.get("key_id") for item in registry["keys"]}
         while True:
@@ -104,6 +117,8 @@ class FamilyKeyRegistry:
             "verifier_digest": self._digest(secret, salt),
             "scopes": sorted(scope_set),
             "max_concurrent_research": max_concurrent_research,
+            "max_bound_addresses": max_bound_addresses,
+            "address_digests": [],
             "revoked": False,
             "created_at": datetime.now(UTC).isoformat(),
             "rotated_at": None,
@@ -111,7 +126,11 @@ class FamilyKeyRegistry:
         registry["keys"].append(record)
         self._write(registry)
         principal = FamilyPrincipal(
-            key_id, clean_label, scope_set, max_concurrent_research
+            key_id,
+            clean_label,
+            scope_set,
+            max_concurrent_research,
+            max_bound_addresses,
         )
         return f"fms_{key_id}_{secret}", principal
 
@@ -140,26 +159,61 @@ class FamilyKeyRegistry:
                 max_concurrent_research=int(
                     record.get("max_concurrent_research", 1)
                 ),
+                max_bound_addresses=int(record.get("max_bound_addresses", 10)),
+            )
+        raise AuthenticationError("invalid access key")
+
+    def authorize_address(
+        self, principal: FamilyPrincipal, normalized_address: str
+    ) -> FamilyPrincipal:
+        if not normalized_address:
+            raise AuthenticationError("client address is required")
+        registry = self._load()
+        for record in registry["keys"]:
+            if record.get("key_id") != principal.key_id or record.get("revoked"):
+                continue
+            try:
+                verifier = bytes.fromhex(record["verifier_digest"])
+            except (KeyError, TypeError, ValueError) as exc:
+                raise AuthenticationError("invalid access key") from exc
+            address_id = hmac.new(
+                verifier,
+                normalized_address.encode("utf-8"),
+                hashlib.sha256,
+            ).hexdigest()
+            bound = list(record.get("address_digests") or [])
+            maximum = int(record.get("max_bound_addresses", 10))
+            if address_id not in bound:
+                if len(bound) >= maximum:
+                    raise AddressLimitError("address limit exceeded")
+                bound.append(address_id)
+                record["address_digests"] = bound
+                self._write(registry)
+            return replace(
+                principal,
+                address_id=address_id,
+                max_bound_addresses=maximum,
             )
         raise AuthenticationError("invalid access key")
 
     def list_records(self) -> list[dict]:
         safe = []
         for record in self._load()["keys"]:
-            safe.append(
-                {
-                    key: record.get(key)
-                    for key in (
-                        "key_id",
-                        "label",
-                        "scopes",
-                        "max_concurrent_research",
-                        "revoked",
-                        "created_at",
-                        "rotated_at",
-                    )
-                }
-            )
+            value = {
+                key: record.get(key)
+                for key in (
+                    "key_id",
+                    "label",
+                    "scopes",
+                    "max_concurrent_research",
+                    "revoked",
+                    "created_at",
+                    "rotated_at",
+                )
+            }
+            value["max_bound_addresses"] = int(record.get("max_bound_addresses", 10))
+            value["bound_address_count"] = len(record.get("address_digests") or [])
+            safe.append(value)
         return safe
 
     def revoke(self, key_id: str) -> bool:
@@ -184,6 +238,7 @@ class FamilyKeyRegistry:
             str(current["label"]),
             scopes=DEFAULT_SCOPES if scopes is None else scopes,
             max_concurrent_research=int(current["max_concurrent_research"] or 1),
+            max_bound_addresses=int(current["max_bound_addresses"] or 10),
         )
 
 

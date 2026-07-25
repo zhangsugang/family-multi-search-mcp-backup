@@ -7,6 +7,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 from starlette.routing import Route
 
+from tools.family_auth import AddressLimitError
 from tools.family_limits import AdmissionTimeout
 from tools.jobs import JobNotFound
 from tools.remote_mcp import RemoteComponents
@@ -75,8 +76,8 @@ def build_rest_routes(components: RemoteComponents) -> list[Route]:
                 query=query, profile=profile, timeout=timeout
             )
 
-        job = await components.scheduler.submit(principal.key_id, runner)
-        public = await components.scheduler.wait(job.request_id, principal.key_id, wait)
+        job = await components.scheduler.submit(principal.owner_id, runner)
+        public = await components.scheduler.wait(job.request_id, principal.owner_id, wait)
         status_code = 200 if public["status"] in {"complete", "failed"} else 202
         return JSONResponse(public, status_code=status_code)
 
@@ -84,7 +85,7 @@ def build_rest_routes(components: RemoteComponents) -> list[Route]:
         principal = _principal(request)
         principal.require("search:research")
         public = await components.scheduler.public(
-            request.path_params["request_id"], principal.key_id
+            request.path_params["request_id"], principal.owner_id
         )
         return JSONResponse(public)
 
@@ -92,7 +93,7 @@ def build_rest_routes(components: RemoteComponents) -> list[Route]:
         principal = _principal(request)
         principal.require("research:continue")
         prior = await components.jobs.get(
-            request.path_params["request_id"], principal.key_id
+            request.path_params["request_id"], principal.owner_id
         )
         body = await _body(request)
         query = validate_query(body.get("query"))
@@ -106,8 +107,8 @@ def build_rest_routes(components: RemoteComponents) -> list[Route]:
                 query=followup, timeout=timeout
             )
 
-        job = await components.scheduler.submit(principal.key_id, runner)
-        public = await components.scheduler.public(job.request_id, principal.key_id)
+        job = await components.scheduler.submit(principal.owner_id, runner)
+        public = await components.scheduler.public(job.request_id, principal.owner_id)
         return JSONResponse(public, status_code=202)
 
     return [
@@ -126,6 +127,11 @@ def build_rest_routes(components: RemoteComponents) -> list[Route]:
 
 
 def error_response(exc: Exception) -> JSONResponse:
+    if isinstance(exc, AddressLimitError):
+        return JSONResponse(
+            {"error": "address_limit_exceeded", "message": "this key already has 10 bound addresses"},
+            status_code=403,
+        )
     if isinstance(exc, AdmissionTimeout):
         return JSONResponse(
             {"error": "queue_timeout", "message": "request queue is full"},

@@ -101,14 +101,14 @@ def build_remote_mcp(components: RemoteComponents) -> FastMCP:
                 timeout=bounded_timeout,
             )
 
-        job = await components.scheduler.submit(principal.key_id, runner)
-        return await components.scheduler.wait(job.request_id, principal.key_id, wait)
+        job = await components.scheduler.submit(principal.owner_id, runner)
+        return await components.scheduler.wait(job.request_id, principal.owner_id, wait)
 
     @remote_mcp.tool()
     async def get_research_result(request_id: str) -> dict:
         """Get an owned background research job."""
         principal = require_principal("search:research")
-        return await components.scheduler.public(request_id, principal.key_id)
+        return await components.scheduler.public(request_id, principal.owner_id)
 
     @remote_mcp.tool()
     async def continue_research(
@@ -118,7 +118,7 @@ def build_remote_mcp(components: RemoteComponents) -> FastMCP:
     ) -> dict:
         """Start a follow-up job grounded in an owned prior research result."""
         principal = require_principal("research:continue")
-        prior = await components.jobs.get(request_id, principal.key_id)
+        prior = await components.jobs.get(request_id, principal.owner_id)
         clean_query = validate_query(query)
         context = prior.result or {}
         original = str(context.get("query") or context.get("original_query") or "").strip()
@@ -130,8 +130,8 @@ def build_remote_mcp(components: RemoteComponents) -> FastMCP:
                 timeout=bounded_int(timeout, 90, 10, 180),
             )
 
-        job = await components.scheduler.submit(principal.key_id, runner)
-        return await components.scheduler.public(job.request_id, principal.key_id)
+        job = await components.scheduler.submit(principal.owner_id, runner)
+        return await components.scheduler.public(job.request_id, principal.owner_id)
 
     @remote_mcp.tool()
     async def provider_status() -> dict:

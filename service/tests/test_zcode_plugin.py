@@ -23,9 +23,9 @@ def test_zcode_marketplace_bundles_mcp_and_skill_without_real_key():
 
     assert marketplace["name"] == "family-multi-search"
     assert marketplace["plugins"][0]["name"] == "family-multi-search"
-    assert marketplace["plugins"][0]["version"] == "0.3.0"
+    assert marketplace["plugins"][0]["version"] == "0.3.1"
     assert manifest["name"] == "family-multi-search"
-    assert manifest["version"] == "0.3.0"
+    assert manifest["version"] == "0.3.1"
     assert manifest == fallback | {"description_i18n": manifest["description_i18n"]}
     assert manifest["skills"] == "./skills/"
     assert manifest["mcpServers"] == "./.mcp.json"

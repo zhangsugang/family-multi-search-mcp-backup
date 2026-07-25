@@ -31,7 +31,10 @@ class FakeSearchService:
 def _client(tmp_path):
     registry = FamilyKeyRegistry(tmp_path / "family-keys.json")
     raw_key, _principal = registry.create("test-family")
-    return TestClient(create_app(registry=registry, service=FakeSearchService())), raw_key
+    return TestClient(
+        create_app(registry=registry, service=FakeSearchService()),
+        client=("127.0.0.1", 50000),
+    ), raw_key
 
 
 def test_health_is_public_and_auth_is_required(tmp_path):
@@ -63,7 +66,10 @@ def test_job_cannot_be_read_by_another_key(tmp_path):
     registry = FamilyKeyRegistry(tmp_path / "family-keys.json")
     first, _ = registry.create("first")
     second, _ = registry.create("second")
-    client = TestClient(create_app(registry=registry, service=FakeSearchService()))
+    client = TestClient(
+        create_app(registry=registry, service=FakeSearchService()),
+        client=("127.0.0.1", 50000),
+    )
     with client:
         created = client.post(
             "/v1/research",
@@ -77,6 +83,119 @@ def test_job_cannot_be_read_by_another_key(tmp_path):
         )
 
     assert denied.status_code == 404
+
+
+def test_one_key_accepts_ten_cloudflare_addresses_and_rejects_eleventh(tmp_path):
+    registry = FamilyKeyRegistry(tmp_path / "family-keys.json")
+    key, _ = registry.create("shared", max_bound_addresses=10)
+    client = TestClient(
+        create_app(registry=registry, service=FakeSearchService()),
+        client=("127.0.0.1", 50000),
+    )
+    with client:
+        responses = [
+            client.get(
+                "/v1/providers/status",
+                headers={
+                    "Authorization": f"Bearer {key}",
+                    "CF-Connecting-IP": f"203.0.113.{index}",
+                },
+            )
+            for index in range(1, 11)
+        ]
+        repeated = client.get(
+            "/v1/providers/status",
+            headers={
+                "Authorization": f"Bearer {key}",
+                "CF-Connecting-IP": "203.0.113.1",
+            },
+        )
+        rejected = client.get(
+            "/v1/providers/status",
+            headers={
+                "Authorization": f"Bearer {key}",
+                "CF-Connecting-IP": "203.0.113.11",
+            },
+        )
+
+    assert all(response.status_code == 200 for response in responses)
+    assert repeated.status_code == 200
+    assert rejected.status_code == 403
+    assert rejected.json()["error"] == "address_limit_exceeded"
+    assert registry.list_records()[0]["bound_address_count"] == 10
+
+
+@pytest.mark.asyncio
+async def test_untrusted_peer_cannot_spoof_cloudflare_address(tmp_path):
+    registry = FamilyKeyRegistry(tmp_path / "family-keys.json")
+    key, _ = registry.create("shared")
+    app = create_app(registry=registry, service=FakeSearchService())
+    transport = httpx.ASGITransport(app=app, client=("198.51.100.20", 123))
+    async with app.inner_app.router.lifespan_context(app.inner_app):
+        async with httpx.AsyncClient(transport=transport, base_url="http://service") as client:
+            for claimed in ("203.0.113.1", "203.0.113.2"):
+                response = await client.get(
+                    "/v1/providers/status",
+                    headers={
+                        "Authorization": f"Bearer {key}",
+                        "CF-Connecting-IP": claimed,
+                    },
+                )
+                assert response.status_code == 200
+
+    assert registry.list_records()[0]["bound_address_count"] == 1
+
+
+@pytest.mark.asyncio
+async def test_shared_key_jobs_are_isolated_and_limited_by_address(tmp_path):
+    class BlockingService(FakeSearchService):
+        def __init__(self):
+            self.release = asyncio.Event()
+
+        async def research_round(self, **kwargs):
+            await self.release.wait()
+            return await super().research_round(**kwargs)
+
+    registry = FamilyKeyRegistry(tmp_path / "family-keys.json")
+    key, _ = registry.create("shared")
+    service = BlockingService()
+    app = create_app(registry=registry, service=service)
+    transport = httpx.ASGITransport(app=app)
+    first_headers = {
+        "Authorization": f"Bearer {key}",
+        "CF-Connecting-IP": "203.0.113.1",
+    }
+    second_headers = {
+        "Authorization": f"Bearer {key}",
+        "CF-Connecting-IP": "203.0.113.2",
+    }
+    async with app.inner_app.router.lifespan_context(app.inner_app):
+        async with httpx.AsyncClient(transport=transport, base_url="http://service") as client:
+            first = await client.post(
+                "/v1/research",
+                headers=first_headers,
+                json={"query": "first", "wait_seconds": 0, "timeout": 10},
+            )
+            second = await client.post(
+                "/v1/research",
+                headers=second_headers,
+                json={"query": "second", "wait_seconds": 0, "timeout": 10},
+            )
+            duplicate = await client.post(
+                "/v1/research",
+                headers=first_headers,
+                json={"query": "duplicate", "wait_seconds": 0, "timeout": 10},
+            )
+            cross_address = await client.get(
+                f"/v1/research/{first.json()['request_id']}",
+                headers=second_headers,
+            )
+            service.release.set()
+
+    assert first.status_code == 202
+    assert second.status_code == 202
+    assert duplicate.status_code == 429
+    assert cross_address.status_code == 404
 
 
 @pytest.mark.asyncio

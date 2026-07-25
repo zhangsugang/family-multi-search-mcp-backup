@@ -16,6 +16,8 @@ Use this Skill when the answer depends on current external information or requir
 5. Use `continue_research` only when evidence gaps or the user request justify another round.
 6. Preserve Claims, Sources/Citations, Conflicts, Unknowns, provider failures, and confidence explanations in the final answer.
 
+One family Key may bind up to 10 public IP addresses. Research admission, job ownership, and the one-unfinished-job rule are isolated per bound address rather than across the whole shared Key.
+
 When MCP is unavailable in a Skills-only client, invoke the bundled `scripts/remote_search.py` adjacent to this Skill. Typical installed locations are:
 
 ```bash

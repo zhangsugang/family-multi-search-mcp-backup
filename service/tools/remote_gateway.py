@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ipaddress
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -10,6 +11,7 @@ from starlette.routing import Mount
 
 from tools import multi_search_mcp as runtime
 from tools.family_auth import (
+    AddressLimitError,
     AuthenticationError,
     FamilyKeyRegistry,
     bearer_token,
@@ -24,6 +26,24 @@ from tools.remote_mcp import (
 )
 from tools.remote_rest import build_rest_routes, error_response
 from tools.search_service import SearchService
+
+
+def _normalized_client_address(scope, headers: dict[str, str]) -> str:
+    client = scope.get("client")
+    if not isinstance(client, (tuple, list)) or not client:
+        raise AuthenticationError("client address is required")
+    try:
+        direct = ipaddress.ip_address(str(client[0]))
+    except ValueError as exc:
+        raise AuthenticationError("invalid client address") from exc
+    candidate = headers.get("cf-connecting-ip") if direct.is_loopback else None
+    try:
+        address = ipaddress.ip_address(candidate or str(direct))
+    except ValueError as exc:
+        raise AuthenticationError("invalid client address") from exc
+    if isinstance(address, ipaddress.IPv6Address) and address.ipv4_mapped:
+        address = address.ipv4_mapped
+    return address.compressed
 
 
 class FamilyAuthenticationMiddleware:
@@ -46,6 +66,14 @@ class FamilyAuthenticationMiddleware:
             principal = self.registry.authenticate(
                 bearer_token(headers.get("authorization"))
             )
+            principal = self.registry.authorize_address(
+                principal,
+                _normalized_client_address(scope, headers),
+            )
+        except AddressLimitError as exc:
+            response = error_response(exc)
+            await response(scope, receive, send)
+            return
         except AuthenticationError:
             response = error_response(PermissionError("authorization required"))
             response.status_code = 401

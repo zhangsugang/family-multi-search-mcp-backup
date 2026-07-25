@@ -31,12 +31,12 @@ class ResearchScheduler:
 
     async def submit(
         self,
-        owner_key_id: str,
+        owner_id: str,
         runner: Callable[[], Awaitable[dict]],
     ) -> ResearchJob:
         if self._closing or not self._workers:
             raise RuntimeError("research scheduler is not running")
-        job = await self.jobs.create(owner_key_id, runner)
+        job = await self.jobs.create(owner_id, runner)
         async with self._condition:
             self._queue.append(job.request_id)
             self._condition.notify(1)
@@ -64,16 +64,16 @@ class ResearchScheduler:
             except ValueError:
                 return None
 
-    async def public(self, request_id: str, owner_key_id: str) -> dict:
-        job = await self.jobs.get(request_id, owner_key_id)
+    async def public(self, request_id: str, owner_id: str) -> dict:
+        job = await self.jobs.get(request_id, owner_id)
         position = await self.queue_position(request_id) if job.status == "queued" else None
         return job.public(queue_position=position)
 
     async def wait(
-        self, request_id: str, owner_key_id: str, timeout: float
+        self, request_id: str, owner_id: str, timeout: float
     ) -> dict:
-        await self.jobs.wait(request_id, owner_key_id, timeout)
-        return await self.public(request_id, owner_key_id)
+        await self.jobs.wait(request_id, owner_id, timeout)
+        return await self.public(request_id, owner_id)
 
     async def close(self) -> None:
         self._closing = True

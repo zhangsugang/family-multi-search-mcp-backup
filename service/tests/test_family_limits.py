@@ -58,3 +58,36 @@ async def test_research_limiter_releases_after_cancellation():
 
     async with limiter.slot(principal, "research"):
         pass
+
+
+@pytest.mark.asyncio
+async def test_research_limiter_isolates_addresses_sharing_one_key():
+    limiter = InvocationLimiter(global_research_limit=2, queue_timeout=1)
+    principals = [
+        FamilyPrincipal(
+            "shared",
+            "shared",
+            frozenset({"search:research"}),
+            1,
+            address_id=f"address-{index}",
+        )
+        for index in range(2)
+    ]
+    entered = 0
+    both_entered = asyncio.Event()
+    release = asyncio.Event()
+
+    async def run(principal):
+        nonlocal entered
+        async with limiter.slot(principal, "research"):
+            entered += 1
+            if entered == 2:
+                both_entered.set()
+            await release.wait()
+
+    tasks = [asyncio.create_task(run(principal)) for principal in principals]
+    await asyncio.wait_for(both_entered.wait(), timeout=1)
+    release.set()
+    await asyncio.gather(*tasks)
+
+    assert entered == 2

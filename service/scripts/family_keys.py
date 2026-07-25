@@ -52,11 +52,13 @@ def main() -> None:
     create.add_argument("--label", required=True)
     create.add_argument("--handoff", type=Path)
     create.add_argument("--show", action="store_true")
+    create.add_argument("--max-bound-addresses", type=int, default=10)
 
     bootstrap = subparsers.add_parser("bootstrap")
     bootstrap.add_argument("--count", type=int, default=10)
     bootstrap.add_argument("--label-prefix", default="family")
     bootstrap.add_argument("--handoff", type=Path, required=True)
+    bootstrap.add_argument("--max-bound-addresses", type=int, default=10)
 
     subparsers.add_parser("list")
     revoke = subparsers.add_parser("revoke")
@@ -71,7 +73,11 @@ def main() -> None:
     registry = FamilyKeyRegistry(args.registry.expanduser())
 
     if args.command == "create":
-        raw_key, principal = registry.create(args.label, scopes=DEFAULT_SCOPES)
+        raw_key, principal = registry.create(
+            args.label,
+            scopes=DEFAULT_SCOPES,
+            max_bound_addresses=args.max_bound_addresses,
+        )
         if args.handoff:
             _write_handoff(
                 args.handoff.expanduser(),
@@ -87,7 +93,9 @@ def main() -> None:
         values = []
         for index in range(1, args.count + 1):
             raw_key, principal = registry.create(
-                f"{args.label_prefix}-{index:02d}", scopes=DEFAULT_SCOPES
+                f"{args.label_prefix}-{index:02d}",
+                scopes=DEFAULT_SCOPES,
+                max_bound_addresses=args.max_bound_addresses,
             )
             values.append(
                 {"key_id": principal.key_id, "label": principal.label, "key": raw_key}

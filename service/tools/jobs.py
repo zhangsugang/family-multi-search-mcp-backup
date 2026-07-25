@@ -13,7 +13,7 @@ from tools.remote_models import sanitize_public
 @dataclass
 class ResearchJob:
     request_id: str
-    owner_key_id: str
+    owner_id: str
     runner: Callable[[], Awaitable[dict]] = field(repr=False)
     status: str = "queued"
     created_at: float = field(default_factory=time.time)
@@ -47,12 +47,12 @@ class JobStore:
         *,
         max_jobs: int = 200,
         max_pending_total: int = 20,
-        max_pending_per_key: int = 1,
+        max_pending_per_owner: int = 1,
         ttl_seconds: float = 3600,
     ):
         self.max_jobs = max_jobs
         self.max_pending_total = max_pending_total
-        self.max_pending_per_key = max_pending_per_key
+        self.max_pending_per_owner = max_pending_per_owner
         self.ttl_seconds = ttl_seconds
         self._jobs: dict[str, ResearchJob] = {}
         self._lock = asyncio.Lock()
@@ -69,7 +69,7 @@ class JobStore:
 
     async def create(
         self,
-        owner_key_id: str,
+        owner_id: str,
         runner: Callable[[], Awaitable[dict]],
     ) -> ResearchJob:
         async with self._lock:
@@ -79,8 +79,8 @@ class JobStore:
             ]
             if len(pending) >= self.max_pending_total:
                 raise AdmissionTimeout("research queue is full")
-            if sum(job.owner_key_id == owner_key_id for job in pending) >= self.max_pending_per_key:
-                raise AdmissionTimeout("this key already has unfinished research")
+            if sum(job.owner_id == owner_id for job in pending) >= self.max_pending_per_owner:
+                raise AdmissionTimeout("this address already has unfinished research")
             if len(self._jobs) >= self.max_jobs:
                 completed = sorted(
                     (job for job in self._jobs.values() if job.status not in {"queued", "running"}),
@@ -92,7 +92,7 @@ class JobStore:
             request_id = secrets.token_urlsafe(18)
             job = ResearchJob(
                 request_id=request_id,
-                owner_key_id=owner_key_id,
+                owner_id=owner_id,
                 runner=runner,
             )
             self._jobs[request_id] = job
@@ -125,11 +125,11 @@ class JobStore:
                 job.updated_at = time.time()
                 job.done.set()
 
-    async def get(self, request_id: str, owner_key_id: str) -> ResearchJob:
+    async def get(self, request_id: str, owner_id: str) -> ResearchJob:
         async with self._lock:
             await self._prune_locked()
             job = self._jobs.get(request_id)
-            if job is None or job.owner_key_id != owner_key_id:
+            if job is None or job.owner_id != owner_id:
                 raise JobNotFound(request_id)
             return job
 
@@ -138,15 +138,15 @@ class JobStore:
             return self._jobs.get(request_id)
 
     async def wait(
-        self, request_id: str, owner_key_id: str, timeout: float
+        self, request_id: str, owner_id: str, timeout: float
     ) -> ResearchJob:
-        job = await self.get(request_id, owner_key_id)
+        job = await self.get(request_id, owner_id)
         if job.status in {"queued", "running"} and timeout > 0:
             try:
                 await asyncio.wait_for(job.done.wait(), timeout=timeout)
             except TimeoutError:
                 pass
-        return await self.get(request_id, owner_key_id)
+        return await self.get(request_id, owner_id)
 
     async def cancel_queued(self, request_id: str) -> None:
         async with self._lock:

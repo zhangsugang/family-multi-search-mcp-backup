@@ -38,7 +38,7 @@ claude plugin update family-multi-search@family-multi-search
 
 ## WorkBuddy: portable Skill
 
-Download `multi-search-remote-0.3.0.tar.gz` or `.zip` from Releases, extract it, and run:
+Download `multi-search-remote-0.3.1.tar.gz` or `.zip` from Releases, extract it, and run:
 
 ```bash
 ./setup.sh --client workbuddy
@@ -49,9 +49,10 @@ The installer asks for the family Key, validates it, installs the Skill under `~
 ## Service behavior
 
 - Eight-source research with citations, conflicts, unknowns, provider status, coverage, and confidence explanations.
+- Each family Key may bind up to 10 public IP addresses; only irreversible address digests are stored.
+- Request isolation and the one-unfinished-job rule are applied per bound address, not across the whole shared Key.
 - Five or more family submissions may be accepted concurrently.
 - Two complete research rounds run at once; additional jobs enter a bounded fair FIFO queue.
-- Each Key may own one unfinished research job at a time.
 
 Public endpoints:
 

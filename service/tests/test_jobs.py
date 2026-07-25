@@ -33,8 +33,8 @@ async def test_job_store_keeps_jobs_queued_until_run_and_isolates_owners():
 
 
 @pytest.mark.asyncio
-async def test_job_store_allows_only_one_unfinished_job_per_key():
-    store = JobStore(max_pending_per_key=1)
+async def test_job_store_allows_only_one_unfinished_job_per_owner():
+    store = JobStore(max_pending_per_owner=1)
 
     async def runner():
         return {"status": "complete"}

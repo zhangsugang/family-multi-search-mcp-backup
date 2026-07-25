@@ -1,4 +1,4 @@
-# Multi Search Remote 0.3.0
+# Multi Search Remote 0.3.1
 
 Portable fallback client for the public `family-multi-search` ZCode plugin and for WorkBuddy/Skills-only clients.
 
@@ -56,4 +56,4 @@ python3 ~/.workbuddy/skills/multi-search-remote/scripts/remote_search.py \
 
 ## Capacity
 
-Five different family users may submit research simultaneously. Two complete eight-source rounds run at once; the remaining accepted jobs wait in a fair queue and are retrieved with `get_research_result`. Logical browser slots are not equivalent to independent provider-account capacity.
+One family Key may be shared by up to 10 bound public IP addresses. Request isolation and unfinished-job limits are applied per bound address, not across the whole Key. Five or more users may submit research simultaneously; two complete eight-source rounds run at once, while the remaining accepted jobs wait in a fair FIFO queue and are retrieved with `get_research_result`. Logical browser slots are not equivalent to independent provider-account capacity.

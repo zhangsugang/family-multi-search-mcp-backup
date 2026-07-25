@@ -20,7 +20,7 @@ async def _wait_until(predicate, timeout: float = 1.0):
 
 @pytest.mark.asyncio
 async def test_five_users_queue_fairly_with_two_active_workers():
-    store = JobStore(max_pending_total=10, max_pending_per_key=1)
+    store = JobStore(max_pending_total=10, max_pending_per_owner=1)
     scheduler = ResearchScheduler(store, worker_count=2)
     release = asyncio.Event()
     active = 0
@@ -77,8 +77,8 @@ async def test_five_users_queue_fairly_with_two_active_workers():
 
 
 @pytest.mark.asyncio
-async def test_scheduler_rejects_second_unfinished_job_for_same_key():
-    store = JobStore(max_pending_per_key=1)
+async def test_scheduler_rejects_second_unfinished_job_for_same_owner():
+    store = JobStore(max_pending_per_owner=1)
     scheduler = ResearchScheduler(store, worker_count=1)
     release = asyncio.Event()
 
