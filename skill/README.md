@@ -1,4 +1,4 @@
-# Multi Search Remote 0.3.1
+# Multi Search Remote 0.3.2
 
 Portable fallback client for the public `family-multi-search` ZCode plugin and for WorkBuddy/Skills-only clients.
 
@@ -8,27 +8,35 @@ Portable fallback client for the public `family-multi-search` ZCode plugin and f
 - Providers: Tavily, Exa, Doubao, Yuanbao, Wenxin, Grok, Gemini, Qianwen
 - No access key, provider credential, cookie, browser profile, or storage state is included.
 
-## ZCode: recommended plugin installation
+## ZCode installation
 
-From the extracted release directory:
-
-```bash
-./setup.sh
-```
-
-The installer securely prompts for the family Key, verifies it, adds the public GitHub Marketplace, and installs the plugin containing both MCP and Skill.
-
-Equivalent direct commands:
+First configure the family Key from the extracted release directory:
 
 ```bash
-claude plugin marketplace add zhangsugang/family-multi-search-mcp-backup
-claude plugin install family-multi-search@family-multi-search \
-  --config family_key='YOUR_FAMILY_KEY'
+./setup.sh --client zcode
 ```
 
-Then restart ZCode or run `/reload-plugins`.
+The installer securely prompts for the Key, verifies it, and writes only:
 
-Enable updates once: open `/plugin` → **Marketplaces** → `family-multi-search` → **Enable auto-update**. ZCode checks the GitHub Marketplace at startup.
+```text
+~/.config/multi-search-remote/config.json
+```
+
+The directory has mode `0700` and the file has mode `0600`.
+
+Then open ZCode:
+
+```text
+Settings → Plugin Management → Discover → +
+```
+
+Add this GitHub Marketplace:
+
+```text
+https://github.com/zhangsugang/family-multi-search-mcp-backup
+```
+
+Install `family-multi-search`, then restart ZCode or run `/reload-plugins`. Do not use `claude plugin` commands: those install into Claude Code, not ZCode.
 
 Installed components:
 

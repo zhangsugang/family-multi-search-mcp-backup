@@ -7,7 +7,6 @@ skill_root=""
 config_root="${HOME}/.config/multi-search-remote"
 base_url="https://mcp-search.bri-king.com"
 non_interactive=0
-replace=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -16,7 +15,6 @@ while [[ $# -gt 0 ]]; do
     --config-root) config_root="$2"; shift 2 ;;
     --url) base_url="${2%/}"; shift 2 ;;
     --non-interactive) non_interactive=1; shift ;;
-    --replace) replace=1; shift ;;
     *) printf 'unknown argument: %s\n' "$1" >&2; exit 2 ;;
   esac
 done
@@ -52,7 +50,7 @@ request = urllib.request.Request(
     headers={
         "Accept": "application/json",
         "Authorization": "Bearer " + os.environ["MULTI_SEARCH_KEY"],
-        "User-Agent": "multi-search-remote-installer/0.3.1",
+        "User-Agent": "multi-search-remote-installer/0.3.2",
     },
 )
 try:
@@ -64,37 +62,6 @@ if value.get("status") != "ready":
     raise SystemExit("family search service is not ready")
 PY
 
-if [[ "$client" == "zcode" ]]; then
-  if ! command -v claude >/dev/null 2>&1; then
-    printf 'ZCode plugin command is unavailable: claude\n' >&2
-    exit 2
-  fi
-  claude plugin marketplace add zhangsugang/family-multi-search-mcp-backup \
-    >/dev/null 2>&1 || claude plugin marketplace update family-multi-search >/dev/null
-  if [[ "$replace" -eq 1 ]]; then
-    claude plugin uninstall family-multi-search >/dev/null 2>&1 || true
-  fi
-  claude plugin install family-multi-search@family-multi-search \
-    --config "family_key=$key"
-  printf 'ZCode plugin installed: family-multi-search\n'
-  printf 'MCP server: family-multi-search\n'
-  printf 'Skill: multi-search-remote\n'
-  printf 'Open /plugin → Marketplaces → family-multi-search and enable auto-update.\n'
-  printf 'Restart ZCode or run /reload-plugins before testing.\n'
-  exit 0
-fi
-
-if [[ -z "$skill_root" ]]; then
-  if [[ "$client" == "workbuddy" ]]; then
-    skill_root="$HOME/.workbuddy/skills"
-  else
-    printf -- '--skill-root is required for skill-only mode\n' >&2
-    exit 2
-  fi
-fi
-
-destination="$skill_root/multi-search-remote"
-mkdir -p "$destination"
 if [[ -L "$config_root" ]]; then
   printf 'config root must not be a symlink\n' >&2
   exit 2
@@ -114,11 +81,6 @@ if not path.is_dir() or metadata.st_uid != os.getuid():
 if stat.S_IMODE(metadata.st_mode) & 0o077:
     raise SystemExit("config root must have mode 0700")
 PY
-rsync -a --delete \
-  --exclude '.git/' --exclude '__pycache__/' --exclude '*.pyc' \
-  "$source_dir/" "$destination/"
-chmod 755 "$destination/setup.sh" "$destination/scripts/remote_search.py"
-
 CONFIG_PATH="$config_root/config.json" BASE_URL="$base_url" ACCESS_KEY="$key" python3 - <<'PY'
 import json
 import os
@@ -145,6 +107,33 @@ finally:
     if os.path.exists(temporary):
         os.unlink(temporary)
 PY
+
+if [[ "$client" == "zcode" ]]; then
+  printf 'Private ZCode MCP config: %s\n' "$config_root/config.json"
+  printf 'In ZCode open Settings → Plugin Management → Discover → +.\n'
+  printf 'Add GitHub repository: zhangsugang/family-multi-search-mcp-backup\n'
+  printf 'Install family-multi-search, then restart ZCode or run /reload-plugins.\n'
+  exit 0
+fi
+
+if [[ -z "$skill_root" ]]; then
+  if [[ "$client" == "workbuddy" ]]; then
+    skill_root="$HOME/.workbuddy/skills"
+  else
+    printf -- '--skill-root is required for skill-only mode\n' >&2
+    exit 2
+  fi
+fi
+
+destination="$skill_root/multi-search-remote"
+mkdir -p "$destination"
+rsync -a --delete \
+  --exclude '.git/' --exclude '__pycache__/' --exclude '*.pyc' \
+  "$source_dir/" "$destination/"
+chmod 755 \
+  "$destination/setup.sh" \
+  "$destination/scripts/remote_search.py" \
+  "$destination/scripts/zcode_mcp_proxy.py"
 
 printf 'Skill installed: %s\n' "$destination"
 printf 'Private REST config: %s\n' "$config_root/config.json"

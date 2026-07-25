@@ -119,7 +119,7 @@ python3 -m pytest tests -q
 python3 tests/test_mcp_stdio.py --runtime tools/multi_search_mcp.py
 ```
 
-当前完整测试结果：`159 passed`。Python 3.14 下的警告来自第三方 `pytest_asyncio` 弃用接口，不是产品测试失败。
+当前完整测试结果：`160 passed`。Python 3.14 下的警告来自第三方 `pytest_asyncio` 弃用接口，不是产品测试失败。
 
 本地已部署网关的 20 个认证客户端状态探针结果：20/20 完成，墙钟 0.945 秒，p50 0.506 秒，p95 0.599 秒。公网 Cloudflare 路径的同类探针为 20/20 完成，墙钟 3.145 秒，p50 2.076 秒，p95 2.836 秒。该结果验证鉴权、协议与多客户端接入，不代表 20 个完整八源研究同时执行；完整研究仍由全局 2 槽位公平限流。
 

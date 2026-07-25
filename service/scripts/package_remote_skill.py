@@ -19,6 +19,7 @@ ALLOWED = (
     "VERSION",
     "setup.sh",
     "scripts/remote_search.py",
+    "scripts/zcode_mcp_proxy.py",
     "references/result-schema.md",
     "references/troubleshooting.md",
     "references/qianwen-read-only-policy.md",
@@ -34,7 +35,11 @@ def _files() -> list[tuple[str, bytes, int]]:
         path = SOURCE / relative
         if not path.is_file():
             raise FileNotFoundError(path)
-        mode = 0o755 if relative in {"setup.sh", "scripts/remote_search.py"} else 0o644
+        mode = 0o755 if relative in {
+            "setup.sh",
+            "scripts/remote_search.py",
+            "scripts/zcode_mcp_proxy.py",
+        } else 0o644
         files.append((relative, path.read_bytes(), mode))
     return files
 

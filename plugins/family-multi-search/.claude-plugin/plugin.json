@@ -1,6 +1,6 @@
 {
   "name": "family-multi-search",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Key-protected eight-source remote research MCP with a citation-preserving ZCode Skill.",
   "author": {
     "name": "Sisyphus",
@@ -11,14 +11,5 @@
   "license": "MIT",
   "keywords": ["search", "research", "mcp", "citations", "family"],
   "skills": "./skills/",
-  "mcpServers": "./.mcp.json",
-  "userConfig": {
-    "family_key": {
-      "title": "Family access key",
-      "description": "Required access key issued by the family multi-search service owner.",
-      "type": "string",
-      "required": true,
-      "sensitive": true
-    }
-  }
+  "mcpServers": "./.mcp.json"
 }

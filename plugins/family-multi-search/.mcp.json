@@ -1,11 +1,11 @@
 {
   "mcpServers": {
     "family-multi-search": {
-      "type": "http",
-      "url": "https://mcp-search.bri-king.com/mcp",
-      "headers": {
-        "Authorization": "Bearer ${user_config.family_key}"
-      },
+      "type": "stdio",
+      "command": "python3",
+      "args": [
+        "${ZCODE_PLUGIN_ROOT}/skills/multi-search-remote/scripts/zcode_mcp_proxy.py"
+      ],
       "enabled": true,
       "timeoutMs": 180000
     }

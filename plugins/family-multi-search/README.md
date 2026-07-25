@@ -1,23 +1,37 @@
 # Family Multi Search ZCode Plugin
 
-This plugin bundles:
+This native ZCode plugin bundles:
 
-- remote MCP server `family-multi-search`;
+- stdio MCP server `family-multi-search`;
 - Skill `multi-search-remote`;
-- sensitive install-time family Key configuration.
+- a standard-library REST bridge to the authenticated remote search service.
 
-Install from the public marketplace repository:
+The plugin does not embed a family Key. Configure the Key first with the portable release installer:
 
 ```bash
-claude plugin marketplace add zhangsugang/family-multi-search-mcp-backup
-claude plugin install family-multi-search@family-multi-search \
-  --config family_key='YOUR_FAMILY_KEY'
+./setup.sh --client zcode
 ```
 
-Restart ZCode or start a new session after installation.
+The Key is written to the user-only file:
+
+```text
+~/.config/multi-search-remote/config.json
+```
+
+Then install the plugin in ZCode:
+
+```text
+Settings → Plugin Management → Discover → +
+```
+
+Add:
+
+```text
+https://github.com/zhangsugang/family-multi-search-mcp-backup
+```
+
+Install `family-multi-search`, then restart ZCode or run `/reload-plugins`. Do not use `claude plugin` commands; they install into Claude Code rather than ZCode.
 
 One family Key may bind up to 10 public IP addresses. Request and research-job limits are isolated by bound address, while the service continues to run two complete research rounds at once and queues additional accepted work fairly.
 
-To enable updates, open `/plugin`, select **Marketplaces**, select `family-multi-search`, and enable auto-update. ZCode checks the GitHub marketplace at startup; use `/reload-plugins` when prompted.
-
-No family Key, provider credential, cookie, profile, or private runtime state is stored in this plugin.
+No family Key, provider credential, cookie, profile, or private runtime state is stored in this plugin or public repository.
