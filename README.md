@@ -1,62 +1,80 @@
-# Family Multi-Search MCP Backup
+# Family Multi-Search
 
-Standalone, secret-free backup of the family eight-source search MCP and portable ZCode/WorkBuddy Skill.
+Public ZCode Marketplace for a key-protected eight-source research MCP, plus a portable WorkBuddy Skill.
 
-## Included
+Repository:
 
-- `service/` — local stdio MCP, authenticated Streamable HTTP gateway, REST API, family-key tooling, deployment scripts, and tests.
-- `skill/` — portable `multi-search-remote` Skill and standard-library REST client.
-- `docs/design.md` — architecture, evidence, safety, concurrency, and deployment design.
+```text
+https://github.com/zhangsugang/family-multi-search-mcp-backup
+```
 
-## Public endpoints
+The repository and Release assets contain no family Keys, provider API Keys, cookies, browser profiles, storage state, or tunnel credentials. An independently issued family Key is required to use the hosted search service.
+
+## ZCode: install MCP + Skill as one plugin
+
+```bash
+claude plugin marketplace add zhangsugang/family-multi-search-mcp-backup
+claude plugin install family-multi-search@family-multi-search \
+  --config family_key='YOUR_FAMILY_KEY'
+```
+
+Restart ZCode or run `/reload-plugins` after installation.
+
+The plugin installs both:
+
+- MCP server: `family-multi-search`
+- Skill: `multi-search-remote`
+
+The MCP connects to `https://mcp-search.bri-king.com/mcp`. The family Key is stored as sensitive ZCode user configuration and is never part of the plugin source.
+
+### Automatic updates
+
+Open `/plugin` → **Marketplaces** → `family-multi-search` and enable **auto-update**. ZCode will fetch newer Marketplace/plugin versions. Manual fallback:
+
+```bash
+claude plugin marketplace update family-multi-search
+claude plugin update family-multi-search@family-multi-search
+```
+
+## WorkBuddy: portable Skill
+
+Download `multi-search-remote-0.3.0.tar.gz` or `.zip` from Releases, extract it, and run:
+
+```bash
+./setup.sh --client workbuddy
+```
+
+The installer asks for the family Key, validates it, installs the Skill under `~/.workbuddy/skills`, and writes a user-only REST configuration under `~/.config/multi-search-remote`. It does not modify ZCode.
+
+## Service behavior
+
+- Eight-source research with citations, conflicts, unknowns, provider status, coverage, and confidence explanations.
+- Five or more family submissions may be accepted concurrently.
+- Two complete research rounds run at once; additional jobs enter a bounded fair FIFO queue.
+- Each Key may own one unfinished research job at a time.
+
+Public endpoints:
 
 - MCP: `https://mcp-search.bri-king.com/mcp`
 - REST: `https://mcp-search.bri-king.com/v1`
 - Health: `https://mcp-search.bri-king.com/healthz`
 
-Access requires an independently issued family Bearer Key. This repository contains no family keys, provider API keys, cookies, browser profiles, storage-state, Cloudflare credentials, or private runtime files.
+## Repository layout
 
-## Client matrix
-
-| Client | Install | Transport |
-| --- | --- | --- |
-| ZCode | Remote MCP **and** `multi-search-remote` Skill | MCP Streamable HTTP at `/mcp` |
-| WorkBuddy | `multi-search-remote` Skill | Bundled `remote_search.py` over REST |
-| Skills-only clients | Same portable Skill | REST |
-
-The MCP provides the actual search tools. The Skill teaches the client when to call them and how to preserve citations, conflicts, unknowns, and confidence. WorkBuddy uses the same Skill through REST when it cannot load MCP directly.
-
-## Quick install
-
-Download the `multi-search-remote-0.2.0` archive from Releases, extract it, then run:
-
-```bash
-./setup.sh
-```
-
-For WorkBuddy:
-
-```bash
-./setup.sh --skill-root "$HOME/.workbuddy/skills"
-```
-
-The installer asks for one family Key, stores it in a user-only configuration file, and writes a private ZCode MCP snippet at:
-
-```text
-~/.config/multi-search-remote/zcode-mcp.json
-```
-
-Import that snippet in ZCode MCP settings and start a new session. Test with “搜索 1970 文创园，并给出来源、冲突和未知项”.
+- `.claude-plugin/marketplace.json` — Marketplace catalog.
+- `plugins/family-multi-search/` — native ZCode plugin containing MCP configuration and Skill.
+- `skill/` — portable ZCode/WorkBuddy Skill and REST client.
+- `service/` — authenticated MCP/REST server source, deployment utilities, and tests.
+- `docs/design.md` — architecture and concurrency design.
 
 ## Test
 
 ```bash
-cd service
-python3 -m pytest tests -q
+python3 -m pytest service/tests -q
+claude plugin validate .
+claude plugin validate plugins/family-multi-search
 ```
 
-## Deploy
+## Self-hosting
 
-Create the private runtime directory separately, then follow `service/README.md`. Never commit or distribute `service/private/`.
-
-Source snapshot: `zhangsugang/daima` commit `20302af`.
+Follow `service/README.md` and create all runtime secrets separately. Never commit or distribute `service/private/`.

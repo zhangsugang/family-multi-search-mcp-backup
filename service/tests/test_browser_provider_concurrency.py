@@ -26,7 +26,7 @@ def test_browser_provider_capacity_and_measured_active_limits():
     }
 
 
-def test_runtime_config_can_raise_measured_active_limit(monkeypatch):
+def test_runtime_config_can_lower_measured_active_limit(monkeypatch):
     monkeypatch.setattr(
         search_mcp,
         "_CONFIG_CACHE",
@@ -34,6 +34,16 @@ def test_runtime_config_can_raise_measured_active_limit(monkeypatch):
     )
 
     assert search_mcp._browser_provider_active_limit("doubao") == 5
+
+
+def test_runtime_config_cannot_raise_measured_active_limit(monkeypatch):
+    monkeypatch.setattr(
+        search_mcp,
+        "_CONFIG_CACHE",
+        {"browser_provider_active_limits": {"qianwen": 10}},
+    )
+
+    assert search_mcp._browser_provider_active_limit("qianwen") == 5
 
 
 @pytest.mark.asyncio

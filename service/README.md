@@ -102,7 +102,7 @@ MULTI_SEARCH_KEY='<临时从安全交接文件读取>' bash scripts/deploy-remot
 - REST：`https://mcp-search.bri-king.com/v1`
 - 公共极简健康检查：`https://mcp-search.bri-king.com/healthz`
 
-远程 MCP 工具为 `search_once`、`research`、`continue_research`、`get_research_result` 和 `provider_status`。所有 `/mcp` 与 `/v1/*` 请求都需要独立家庭 Bearer Key；完整研究默认每 Key 同时 1 个、全局同时 2 个，其余进入有界队列。
+远程 MCP 工具为 `search_once`、`research`、`continue_research`、`get_research_result` 和 `provider_status`。所有 `/mcp` 与 `/v1/*` 请求都需要独立家庭 Bearer Key。五个不同 Key 可以同时提交完整研究并立即获得 `request_id`；固定两个 worker 同时运行完整八源研究，其余任务保持 `queued` 并按 FIFO 自动执行，不再使用旧的 30 秒 semaphore 排队超时。每个 Key 最多拥有一个未完成完整研究。
 
 临时目录验证：
 
@@ -119,7 +119,7 @@ python3 -m pytest tests -q
 python3 tests/test_mcp_stdio.py --runtime tools/multi_search_mcp.py
 ```
 
-当前完整测试结果：`147 passed`。Python 3.14 下的警告来自第三方 `pytest_asyncio` 弃用接口，不是产品测试失败。
+当前完整测试结果：`153 passed`。Python 3.14 下的警告来自第三方 `pytest_asyncio` 弃用接口，不是产品测试失败。
 
 本地已部署网关的 20 个认证客户端状态探针结果：20/20 完成，墙钟 0.945 秒，p50 0.506 秒，p95 0.599 秒。公网 Cloudflare 路径的同类探针为 20/20 完成，墙钟 3.145 秒，p50 2.076 秒，p95 2.836 秒。该结果验证鉴权、协议与多客户端接入，不代表 20 个完整八源研究同时执行；完整研究仍由全局 2 槽位公平限流。
 

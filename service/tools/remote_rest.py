@@ -71,30 +71,22 @@ def build_rest_routes(components: RemoteComponents) -> list[Route]:
         profile = str(body.get("profile", "general"))
 
         async def runner() -> dict:
-            async with components.limiter.slot(principal, "research"):
-                return await components.service.research_round(
-                    query=query, profile=profile, timeout=timeout
-                )
+            return await components.service.research_round(
+                query=query, profile=profile, timeout=timeout
+            )
 
-        job = await components.jobs.create(principal.key_id, runner)
-        job = await components.jobs.wait(job.request_id, principal.key_id, wait)
-        if job.status == "queue_timeout":
-            status_code = 429
-        elif job.status in {"complete", "failed"}:
-            status_code = 200
-        else:
-            status_code = 202
-        return JSONResponse(job.public(), status_code=status_code)
+        job = await components.scheduler.submit(principal.key_id, runner)
+        public = await components.scheduler.wait(job.request_id, principal.key_id, wait)
+        status_code = 200 if public["status"] in {"complete", "failed"} else 202
+        return JSONResponse(public, status_code=status_code)
 
     async def get_research(request: Request) -> JSONResponse:
         principal = _principal(request)
         principal.require("search:research")
-        job = await components.jobs.get(
+        public = await components.scheduler.public(
             request.path_params["request_id"], principal.key_id
         )
-        return JSONResponse(
-            job.public(), status_code=429 if job.status == "queue_timeout" else 200
-        )
+        return JSONResponse(public)
 
     async def continue_research(request: Request) -> JSONResponse:
         principal = _principal(request)
@@ -110,13 +102,13 @@ def build_rest_routes(components: RemoteComponents) -> list[Route]:
         followup = f"基于此前研究对象 {original}，继续研究：{query}" if original else query
 
         async def runner() -> dict:
-            async with components.limiter.slot(principal, "research"):
-                return await components.service.research_round(
-                    query=followup, timeout=timeout
-                )
+            return await components.service.research_round(
+                query=followup, timeout=timeout
+            )
 
-        job = await components.jobs.create(principal.key_id, runner)
-        return JSONResponse(job.public(), status_code=202)
+        job = await components.scheduler.submit(principal.key_id, runner)
+        public = await components.scheduler.public(job.request_id, principal.key_id)
+        return JSONResponse(public, status_code=202)
 
     return [
         Route("/healthz", healthz, methods=["GET"]),

@@ -1,48 +1,59 @@
-# Multi Search Remote
+# Multi Search Remote 0.3.0
 
-Portable client package for the family eight-source search service.
+Portable fallback client for the public `family-multi-search` ZCode plugin and for WorkBuddy/Skills-only clients.
 
+- Public repository: `https://github.com/zhangsugang/family-multi-search-mcp-backup`
 - MCP: `https://mcp-search.bri-king.com/mcp`
 - REST: `https://mcp-search.bri-king.com/v1`
 - Providers: Tavily, Exa, Doubao, Yuanbao, Wenxin, Grok, Gemini, Qianwen
-- The archive contains no access key, provider credential, cookie, browser profile, or storage state.
+- No access key, provider credential, cookie, browser profile, or storage state is included.
 
-## Install
+## ZCode: recommended plugin installation
+
+From the extracted release directory:
 
 ```bash
-tar -xzf multi-search-remote.tar.gz
-cd multi-search-remote
 ./setup.sh
 ```
 
-The installer asks for the family Key, stores it in a user-only file, installs the Skill, and writes a private ZCode MCP configuration snippet. It does not edit unknown client configuration files automatically.
+The installer securely prompts for the family Key, verifies it, adds the public GitHub Marketplace, and installs the plugin containing both MCP and Skill.
 
-Default locations:
+Equivalent direct commands:
+
+```bash
+claude plugin marketplace add zhangsugang/family-multi-search-mcp-backup
+claude plugin install family-multi-search@family-multi-search \
+  --config family_key='YOUR_FAMILY_KEY'
+```
+
+Then restart ZCode or run `/reload-plugins`.
+
+Enable updates once: open `/plugin` → **Marketplaces** → `family-multi-search` → **Enable auto-update**. ZCode checks the GitHub Marketplace at startup.
+
+Installed components:
 
 ```text
-~/.zcode/skills/multi-search-remote/
-~/.config/multi-search-remote/config.json
-~/.config/multi-search-remote/zcode-mcp.json
+Plugin: family-multi-search
+MCP: family-multi-search
+Skill: multi-search-remote
 ```
 
-For WorkBuddy or another Skills-only client, choose its Skill root:
+## WorkBuddy
 
 ```bash
-./setup.sh --skill-root "$HOME/.workbuddy/skills"
+./setup.sh --client workbuddy
 ```
 
-For unattended setup, pass the key through the environment instead of a command-line argument:
+This installs the Skill under `~/.workbuddy/skills` and configures the bundled REST client. It does not modify ZCode.
+
+Test:
 
 ```bash
-MULTI_SEARCH_KEY='fms_...' ./setup.sh --non-interactive
+python3 ~/.workbuddy/skills/multi-search-remote/scripts/remote_search.py status
+python3 ~/.workbuddy/skills/multi-search-remote/scripts/remote_search.py \
+  research --query '1970文创园' --wait
 ```
 
-## Test
+## Capacity
 
-```bash
-python3 ~/.zcode/skills/multi-search-remote/scripts/remote_search.py status
-python3 ~/.zcode/skills/multi-search-remote/scripts/remote_search.py research \
-  --query '1970文创园' --wait
-```
-
-The remote service can accept multiple family clients, but complete eight-source research is deliberately admitted at a lower active concurrency to protect browser-backed providers. Queued capacity is not the same as simultaneous full-research capacity.
+Five different family users may submit research simultaneously. Two complete eight-source rounds run at once; the remaining accepted jobs wait in a fair queue and are retrieved with `get_research_result`. Logical browser slots are not equivalent to independent provider-account capacity.

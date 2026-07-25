@@ -1,0 +1,22 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "family-multi-search",
+  "description": "Public ZCode marketplace for the key-protected family eight-source search MCP and Skill.",
+  "owner": {
+    "name": "Sisyphus",
+    "url": "https://github.com/zhangsugang"
+  },
+  "plugins": [
+    {
+      "name": "family-multi-search",
+      "description": "Eight-source evidence research over a key-protected remote MCP, bundled with the multi-search-remote Skill.",
+      "version": "0.3.0",
+      "author": {
+        "name": "Sisyphus"
+      },
+      "category": "productivity",
+      "source": "./plugins/family-multi-search",
+      "homepage": "https://github.com/zhangsugang/family-multi-search-mcp-backup"
+    }
+  ]
+}

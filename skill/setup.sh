@@ -2,20 +2,29 @@
 set -euo pipefail
 
 source_dir="$(cd "$(dirname "$0")" && pwd)"
-skill_root="${HOME}/.zcode/skills"
+client="zcode"
+skill_root=""
 config_root="${HOME}/.config/multi-search-remote"
 base_url="https://mcp-search.bri-king.com"
 non_interactive=0
+replace=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    --client) client="$2"; shift 2 ;;
     --skill-root) skill_root="$2"; shift 2 ;;
     --config-root) config_root="$2"; shift 2 ;;
     --url) base_url="${2%/}"; shift 2 ;;
     --non-interactive) non_interactive=1; shift ;;
+    --replace) replace=1; shift ;;
     *) printf 'unknown argument: %s\n' "$1" >&2; exit 2 ;;
   esac
 done
+
+case "$client" in
+  zcode|workbuddy|skill-only) ;;
+  *) printf 'client must be zcode, workbuddy, or skill-only\n' >&2; exit 2 ;;
+esac
 
 key="${MULTI_SEARCH_KEY:-}"
 if [[ -z "$key" && "$non_interactive" -eq 0 ]]; then
@@ -30,6 +39,58 @@ fi
 if [[ ! "$key" =~ ^fms_[a-z0-9]{8}_[A-Za-z0-9_-]{32,}$ ]]; then
   printf 'invalid family access key format\n' >&2
   exit 2
+fi
+
+MULTI_SEARCH_KEY="$key" MULTI_SEARCH_URL="$base_url" python3 - <<'PY'
+import json
+import os
+import urllib.error
+import urllib.request
+
+request = urllib.request.Request(
+    os.environ["MULTI_SEARCH_URL"].rstrip("/") + "/v1/providers/status",
+    headers={
+        "Accept": "application/json",
+        "Authorization": "Bearer " + os.environ["MULTI_SEARCH_KEY"],
+        "User-Agent": "multi-search-remote-installer/0.3.0",
+    },
+)
+try:
+    with urllib.request.urlopen(request, timeout=30) as response:
+        value = json.loads(response.read().decode("utf-8"))
+except (urllib.error.URLError, ValueError) as exc:
+    raise SystemExit(f"family Key or service verification failed: {exc}")
+if value.get("status") != "ready":
+    raise SystemExit("family search service is not ready")
+PY
+
+if [[ "$client" == "zcode" ]]; then
+  if ! command -v claude >/dev/null 2>&1; then
+    printf 'ZCode plugin command is unavailable: claude\n' >&2
+    exit 2
+  fi
+  claude plugin marketplace add zhangsugang/family-multi-search-mcp-backup \
+    >/dev/null 2>&1 || claude plugin marketplace update family-multi-search >/dev/null
+  if [[ "$replace" -eq 1 ]]; then
+    claude plugin uninstall family-multi-search >/dev/null 2>&1 || true
+  fi
+  claude plugin install family-multi-search@family-multi-search \
+    --config "family_key=$key"
+  printf 'ZCode plugin installed: family-multi-search\n'
+  printf 'MCP server: family-multi-search\n'
+  printf 'Skill: multi-search-remote\n'
+  printf 'Open /plugin → Marketplaces → family-multi-search and enable auto-update.\n'
+  printf 'Restart ZCode or run /reload-plugins before testing.\n'
+  exit 0
+fi
+
+if [[ -z "$skill_root" ]]; then
+  if [[ "$client" == "workbuddy" ]]; then
+    skill_root="$HOME/.workbuddy/skills"
+  else
+    printf -- '--skill-root is required for skill-only mode\n' >&2
+    exit 2
+  fi
 fi
 
 destination="$skill_root/multi-search-remote"
@@ -58,50 +119,33 @@ rsync -a --delete \
   "$source_dir/" "$destination/"
 chmod 755 "$destination/setup.sh" "$destination/scripts/remote_search.py"
 
-CONFIG_PATH="$config_root/config.json" MCP_PATH="$config_root/zcode-mcp.json" BASE_URL="$base_url" ACCESS_KEY="$key" python3 - <<'PY'
+CONFIG_PATH="$config_root/config.json" BASE_URL="$base_url" ACCESS_KEY="$key" python3 - <<'PY'
 import json
 import os
 import tempfile
 from pathlib import Path
 
-config = Path(os.environ["CONFIG_PATH"])
-mcp = Path(os.environ["MCP_PATH"])
-for path in (config, mcp):
-    if path.is_symlink():
-        raise SystemExit(f"refusing symlinked private config: {path}")
-
-def atomic_json(path, value):
-    descriptor, temporary = tempfile.mkstemp(prefix=".config-", dir=path.parent, text=True)
-    try:
-        os.fchmod(descriptor, 0o600)
-        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
-            json.dump(value, handle, indent=2)
-            handle.write("\n")
-            handle.flush()
-            os.fsync(handle.fileno())
-        os.replace(temporary, path)
-        os.chmod(path, 0o600)
-    finally:
-        if os.path.exists(temporary):
-            os.unlink(temporary)
-
-atomic_json(config, {
-    "base_url": os.environ["BASE_URL"],
-    "access_key": os.environ["ACCESS_KEY"],
-})
-atomic_json(mcp, {
-    "mcpServers": {
-        "family-multi-search": {
-            "url": os.environ["BASE_URL"] + "/mcp",
-            "headers": {"Authorization": "Bearer " + os.environ["ACCESS_KEY"]},
-        }
-    }
-})
+path = Path(os.environ["CONFIG_PATH"])
+if path.is_symlink():
+    raise SystemExit(f"refusing symlinked private config: {path}")
+descriptor, temporary = tempfile.mkstemp(prefix=".config-", dir=path.parent, text=True)
+try:
+    os.fchmod(descriptor, 0o600)
+    with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+        json.dump({
+            "base_url": os.environ["BASE_URL"],
+            "access_key": os.environ["ACCESS_KEY"],
+        }, handle, indent=2)
+        handle.write("\n")
+        handle.flush()
+        os.fsync(handle.fileno())
+    os.replace(temporary, path)
+    os.chmod(path, 0o600)
+finally:
+    if os.path.exists(temporary):
+        os.unlink(temporary)
 PY
 
-MULTI_SEARCH_KEY="$key" MULTI_SEARCH_URL="$base_url" \
-  python3 "$destination/scripts/remote_search.py" --json status >/dev/null
 printf 'Skill installed: %s\n' "$destination"
-printf 'Private client config: %s\n' "$config_root/config.json"
-printf 'Private ZCode MCP snippet: %s\n' "$config_root/zcode-mcp.json"
-printf 'Import the MCP snippet through your ZCode version MCP settings, then start a new session.\n'
+printf 'Private REST config: %s\n' "$config_root/config.json"
+printf 'WorkBuddy uses Skill + REST; no ZCode configuration was modified.\n'

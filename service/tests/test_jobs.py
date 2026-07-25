@@ -9,7 +9,7 @@ from tools.jobs import JobNotFound, JobStore
 
 
 @pytest.mark.asyncio
-async def test_job_store_isolates_owners_and_sanitizes_results():
+async def test_job_store_keeps_jobs_queued_until_run_and_isolates_owners():
     store = JobStore()
 
     async def runner():
@@ -20,28 +20,42 @@ async def test_job_store_isolates_owners_and_sanitizes_results():
         }
 
     job = await store.create("owner-a", runner)
-    job = await store.wait(job.request_id, "owner-a", 1)
-
-    assert job.status == "complete"
-    assert "conversation_url" not in job.public()["result"]
-    assert "cdp_url" not in job.public()["result"]["nested"]
+    assert job.status == "queued"
     with pytest.raises(JobNotFound):
         await store.get(job.request_id, "owner-b")
 
+    await store.run(job.request_id)
+    completed = await store.wait(job.request_id, "owner-a", 1)
+
+    assert completed.status == "complete"
+    assert "conversation_url" not in completed.public()["result"]
+    assert "cdp_url" not in completed.public()["result"]["nested"]
+
 
 @pytest.mark.asyncio
-async def test_job_store_bounds_pending_jobs_per_key():
-    store = JobStore(max_pending_per_key=2)
-    release = asyncio.Event()
+async def test_job_store_allows_only_one_unfinished_job_per_key():
+    store = JobStore(max_pending_per_key=1)
 
     async def runner():
-        await release.wait()
         return {"status": "complete"}
 
-    await store.create("owner-a", runner)
-    await store.create("owner-a", runner)
+    first = await store.create("owner-a", runner)
     with pytest.raises(AdmissionTimeout):
         await store.create("owner-a", runner)
 
-    release.set()
+    await store.run(first.request_id)
+    second = await store.create("owner-a", runner)
+    assert second.status == "queued"
+
+
+@pytest.mark.asyncio
+async def test_job_store_close_cancels_queued_jobs():
+    store = JobStore()
+
+    async def runner():
+        return {"status": "complete"}
+
+    job = await store.create("owner-a", runner)
     await store.close()
+
+    assert (await store.get(job.request_id, "owner-a")).status == "cancelled"

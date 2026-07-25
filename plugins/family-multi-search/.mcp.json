@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "family-multi-search": {
+      "type": "http",
+      "url": "https://mcp-search.bri-king.com/mcp",
+      "headers": {
+        "Authorization": "Bearer ${user_config.family_key}"
+      },
+      "enabled": true,
+      "timeoutMs": 180000
+    }
+  }
+}

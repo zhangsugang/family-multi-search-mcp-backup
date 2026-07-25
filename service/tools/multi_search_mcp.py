@@ -105,8 +105,8 @@ def _browser_provider_active_limit(source_id: str) -> int:
     candidate = configured.get(source_id) if isinstance(configured, dict) else None
     if isinstance(candidate, bool) or not isinstance(candidate, int):
         return default
-    capacity = BROWSER_PROVIDER_CONFIG[source_id]["capacity"]
-    return candidate if 1 <= candidate <= capacity else default
+    measured_limit = BROWSER_PROVIDER_CONFIG[source_id]["active_limit"]
+    return candidate if 1 <= candidate <= measured_limit else default
 
 
 def _browser_provider_limiter(source_id: str) -> asyncio.Semaphore:

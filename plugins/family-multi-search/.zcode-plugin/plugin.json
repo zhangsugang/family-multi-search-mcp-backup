@@ -1,0 +1,28 @@
+{
+  "name": "family-multi-search",
+  "version": "0.3.0",
+  "description": "Key-protected eight-source remote research MCP with a citation-preserving ZCode Skill.",
+  "description_i18n": {
+    "en": "Key-protected eight-source remote research MCP with a citation-preserving ZCode Skill.",
+    "zh-CN": "需要家庭 Key 的八源远程研究 MCP，内置保留来源、冲突、未知项和置信度的 ZCode Skill。"
+  },
+  "author": {
+    "name": "Sisyphus",
+    "url": "https://github.com/zhangsugang"
+  },
+  "homepage": "https://github.com/zhangsugang/family-multi-search-mcp-backup",
+  "repository": "https://github.com/zhangsugang/family-multi-search-mcp-backup",
+  "license": "MIT",
+  "keywords": ["search", "research", "mcp", "citations", "family"],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "userConfig": {
+    "family_key": {
+      "title": "Family access key",
+      "description": "Required access key issued by the family multi-search service owner.",
+      "type": "string",
+      "required": true,
+      "sensitive": true
+    }
+  }
+}

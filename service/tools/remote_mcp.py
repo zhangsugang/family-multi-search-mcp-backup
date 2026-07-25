@@ -9,6 +9,7 @@ from mcp.server.transport_security import TransportSecuritySettings
 from tools.family_auth import FamilyPrincipal
 from tools.family_limits import InvocationLimiter
 from tools.jobs import JobStore
+from tools.research_scheduler import ResearchScheduler
 from tools.remote_models import bounded_int, sanitize_public, validate_query
 from tools.search_service import SearchService
 
@@ -23,6 +24,7 @@ class RemoteComponents:
     service: SearchService
     limiter: InvocationLimiter
     jobs: JobStore
+    scheduler: ResearchScheduler
 
 
 def require_principal(scope: str) -> FamilyPrincipal:
@@ -93,23 +95,20 @@ def build_remote_mcp(components: RemoteComponents) -> FastMCP:
         wait = bounded_int(wait_seconds, 3, 0, 20)
 
         async def runner() -> dict:
-            async with components.limiter.slot(principal, "research"):
-                return await components.service.research_round(
-                    query=clean_query,
-                    profile=profile,
-                    timeout=bounded_timeout,
-                )
+            return await components.service.research_round(
+                query=clean_query,
+                profile=profile,
+                timeout=bounded_timeout,
+            )
 
-        job = await components.jobs.create(principal.key_id, runner)
-        job = await components.jobs.wait(job.request_id, principal.key_id, wait)
-        return job.public()
+        job = await components.scheduler.submit(principal.key_id, runner)
+        return await components.scheduler.wait(job.request_id, principal.key_id, wait)
 
     @remote_mcp.tool()
     async def get_research_result(request_id: str) -> dict:
         """Get an owned background research job."""
         principal = require_principal("search:research")
-        job = await components.jobs.get(request_id, principal.key_id)
-        return job.public()
+        return await components.scheduler.public(request_id, principal.key_id)
 
     @remote_mcp.tool()
     async def continue_research(
@@ -126,14 +125,13 @@ def build_remote_mcp(components: RemoteComponents) -> FastMCP:
         followup = f"基于此前研究对象 {original}，继续研究：{clean_query}" if original else clean_query
 
         async def runner() -> dict:
-            async with components.limiter.slot(principal, "research"):
-                return await components.service.research_round(
-                    query=followup,
-                    timeout=bounded_int(timeout, 90, 10, 180),
-                )
+            return await components.service.research_round(
+                query=followup,
+                timeout=bounded_int(timeout, 90, 10, 180),
+            )
 
-        job = await components.jobs.create(principal.key_id, runner)
-        return job.public()
+        job = await components.scheduler.submit(principal.key_id, runner)
+        return await components.scheduler.public(job.request_id, principal.key_id)
 
     @remote_mcp.tool()
     async def provider_status() -> dict:

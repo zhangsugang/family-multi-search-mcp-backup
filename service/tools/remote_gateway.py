@@ -16,6 +16,7 @@ from tools.family_auth import (
 )
 from tools.family_limits import AdmissionTimeout, InvocationLimiter
 from tools.jobs import JobNotFound, JobStore
+from tools.research_scheduler import ResearchScheduler
 from tools.remote_mcp import (
     CURRENT_PRINCIPAL,
     RemoteComponents,
@@ -72,12 +73,16 @@ def create_app(
     service: SearchService | None = None,
     limiter: InvocationLimiter | None = None,
     jobs: JobStore | None = None,
+    scheduler: ResearchScheduler | None = None,
 ):
     registry = registry or FamilyKeyRegistry(_registry_path())
+    job_store = jobs or JobStore()
+    research_scheduler = scheduler or ResearchScheduler(job_store, worker_count=2)
     components = RemoteComponents(
         service=service or SearchService(runtime),
         limiter=limiter or InvocationLimiter(),
-        jobs=jobs or JobStore(),
+        jobs=job_store,
+        scheduler=research_scheduler,
     )
     remote_mcp = build_remote_mcp(components)
     mcp_app = remote_mcp.streamable_http_app()
@@ -85,10 +90,11 @@ def create_app(
     @asynccontextmanager
     async def lifespan(_app):
         async with remote_mcp.session_manager.run():
+            await components.scheduler.start()
             try:
                 yield
             finally:
-                await components.jobs.close()
+                await components.scheduler.close()
 
     async def handle_error(_request, exc):
         return error_response(exc)
