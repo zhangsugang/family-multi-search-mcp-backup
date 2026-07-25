@@ -41,7 +41,7 @@ request = urllib.request.Request(
     headers={
         "Accept": "application/json",
         "Authorization": "Bearer " + os.environ["MULTI_SEARCH_KEY"],
-        "User-Agent": "family-multi-search-zcode-installer/0.3.2",
+        "User-Agent": "family-multi-search-zcode-installer/0.3.3",
     },
 )
 try:

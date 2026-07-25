@@ -40,7 +40,7 @@ def request(method: str, path: str, payload: dict | None = None) -> dict:
     headers = {
         "Accept": "application/json",
         "Authorization": f"Bearer {config['access_key']}",
-        "User-Agent": "family-multi-search-zcode-proxy/0.3.2",
+        "User-Agent": "family-multi-search-zcode-proxy/0.3.3",
     }
     if body is not None:
         headers["Content-Type"] = "application/json"
@@ -159,7 +159,7 @@ def handle(message: dict) -> None:
             {
                 "protocolVersion": protocol,
                 "capabilities": {"tools": {}},
-                "serverInfo": {"name": "family-multi-search", "version": "0.3.2"},
+                "serverInfo": {"name": "family-multi-search", "version": "0.3.3"},
                 "instructions": "Preserve citations, conflicts, unknowns, and confidence explanations.",
             },
         )

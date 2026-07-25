@@ -42,7 +42,13 @@ async def test_dual_provider_lanes_launch_concurrently_and_merge(monkeypatch):
     both_entered = asyncio.Event()
     calls = []
 
-    async def fake_collect(queries, timeout, original_query, lane_name="single"):
+    async def fake_collect(
+        queries,
+        timeout,
+        original_query,
+        lane_name="single",
+        skipped_sources=None,
+    ):
         nonlocal entered
         calls.append((lane_name, queries))
         entered += 1

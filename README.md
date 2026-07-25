@@ -26,7 +26,7 @@ Re-running the same command updates the installed Marketplace/plugin while prese
 
 #### 1. Configure the family Key
 
-Download and extract `multi-search-remote-0.3.2.tar.gz` or `.zip` from Releases, then run:
+Download and extract `multi-search-remote-0.3.3.tar.gz` or `.zip` from Releases, then run:
 
 ```bash
 ./setup.sh --client zcode
@@ -82,7 +82,7 @@ Open **Settings → Plugin Management**, refresh the `family-multi-search` Marke
 
 ## WorkBuddy
 
-From the same v0.3.2 release directory:
+From the same v0.3.3 release directory:
 
 ```bash
 ./setup.sh --client workbuddy
@@ -93,6 +93,10 @@ This installs the Skill under `~/.workbuddy/skills` and uses the same private RE
 ## Service behavior
 
 - Eight-source research with citations, conflicts, unknowns, coverage, provider status, and confidence explanations.
+- Seven sources run general and specialized lanes; Grok runs only one X/Twitter-specialized query per round.
+- Grok quota exhaustion is reported as `unavailable`, never as a successful prompt echo.
+- Tavily rotates through five private server-side Keys; Exa runs through Agent-Reach/mcporter.
+- Grok, Gemini, and Qianwen browsers close after 10 idle minutes.
 - Each Key may bind up to 10 public IP addresses; only irreversible address digests are stored.
 - Request isolation and one-unfinished-job limits apply per bound address.
 - Two complete research rounds run simultaneously; additional accepted jobs enter a fair FIFO queue.

@@ -1,11 +1,13 @@
-# Multi Search Remote 0.3.2
+# Multi Search Remote 0.3.3
 
 Portable fallback client for the public `family-multi-search` ZCode plugin and for WorkBuddy/Skills-only clients.
 
 - Public repository: `https://github.com/zhangsugang/family-multi-search-mcp-backup`
 - MCP: `https://mcp-search.bri-king.com/mcp`
 - REST: `https://mcp-search.bri-king.com/v1`
-- Providers: Tavily, Exa, Doubao, Yuanbao, Wenxin, Grok, Gemini, Qianwen
+- Providers: Tavily, Exa through Agent-Reach, Doubao, Yuanbao, Wenxin, Grok, Gemini, Qianwen
+- Grok: one X/Twitter-specialized query per research round; no general lane
+- Tavily: private five-Key server-side rotation; no provider Key is shipped to clients
 - No access key, provider credential, cookie, browser profile, or storage state is included.
 
 ## ZCode installation

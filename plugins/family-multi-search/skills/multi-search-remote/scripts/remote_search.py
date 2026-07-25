@@ -37,7 +37,7 @@ def request(config: dict, method: str, path: str, payload: dict | None = None) -
     headers = {
         "Accept": "application/json",
         "Authorization": f"Bearer {config['access_key']}",
-        "User-Agent": "multi-search-remote/0.3.2",
+        "User-Agent": "multi-search-remote/0.3.3",
     }
     if body is not None:
         headers["Content-Type"] = "application/json"

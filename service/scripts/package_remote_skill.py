@@ -10,9 +10,14 @@ from pathlib import Path
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-REPOSITORY_ROOT = PROJECT_ROOT.parent
-SOURCE = REPOSITORY_ROOT / "skill"
-OUTPUT = REPOSITORY_ROOT / "output"
+MONOREPO_ROOT = PROJECT_ROOT.parents[1]
+if (MONOREPO_ROOT / "packs" / "multi-search-remote").is_dir():
+    SOURCE = MONOREPO_ROOT / "packs" / "multi-search-remote"
+    OUTPUT = MONOREPO_ROOT / "output"
+else:
+    REPOSITORY_ROOT = PROJECT_ROOT.parent
+    SOURCE = REPOSITORY_ROOT / "skill"
+    OUTPUT = REPOSITORY_ROOT / "output"
 ALLOWED = (
     "SKILL.md",
     "README.md",

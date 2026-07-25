@@ -6,8 +6,12 @@ import sys
 from pathlib import Path
 
 
-REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
-PROXY = REPOSITORY_ROOT / "skill" / "scripts" / "zcode_mcp_proxy.py"
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+MONOREPO_ROOT = PROJECT_ROOT.parents[1]
+if (MONOREPO_ROOT / "packs" / "multi-search-remote").is_dir():
+    PROXY = MONOREPO_ROOT / "packs" / "multi-search-remote" / "scripts" / "zcode_mcp_proxy.py"
+else:
+    PROXY = PROJECT_ROOT.parent / "skill" / "scripts" / "zcode_mcp_proxy.py"
 
 
 def test_zcode_stdio_proxy_initializes_and_lists_five_tools():
@@ -37,7 +41,7 @@ def test_zcode_stdio_proxy_initializes_and_lists_five_tools():
 
     assert responses[0]["result"]["serverInfo"] == {
         "name": "family-multi-search",
-        "version": "0.3.2",
+        "version": "0.3.3",
     }
     assert [tool["name"] for tool in responses[1]["result"]["tools"]] == [
         "search_once",

@@ -73,6 +73,21 @@ def test_grok_lifecycle_state_is_event_loop_scoped():
     assert first["lock"] is not second["lock"]
 
 
+def test_browser_lifecycle_states_are_provider_scoped():
+    async def get_states():
+        return (
+            search_mcp._browser_lifecycle_state("grok"),
+            search_mcp._browser_lifecycle_state("gemini"),
+            search_mcp._browser_lifecycle_state("qianwen"),
+        )
+
+    grok, gemini, qianwen = asyncio.run(get_states())
+
+    assert grok is not gemini
+    assert gemini is not qianwen
+    assert grok["lock"] is not gemini["lock"]
+
+
 
 @pytest.mark.asyncio
 async def test_cdp_task_pages_are_new_for_every_request():
@@ -91,8 +106,51 @@ async def test_cdp_task_pages_are_new_for_every_request():
         search_mcp._new_browser_task_page(browser, "测试来源"),
     )
 
-    assert first is not second
-    assert created == [first, second]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("provider", "query_name", "runner_name", "cdp_url"),
+    [
+        ("gemini", "_gemini_query", "_run_gemini_query", search_mcp.GEMINI_CDP_URL),
+        ("qianwen", "_qianwen_query", "_run_qianwen_query", search_mcp.QIANWEN_CDP_URL),
+    ],
+)
+async def test_provider_query_schedules_idle_browser_shutdown(
+    monkeypatch, provider, query_name, runner_name, cdp_url
+):
+    scheduled = []
+
+    async def fake_runner(*args, **kwargs):
+        return {"answer": "ok", "references": [], "partial": False}
+
+    def fake_schedule(state, url, delay_seconds=600):
+        scheduled.append((state["active_requests"], url, delay_seconds))
+
+    monkeypatch.setattr(search_mcp, runner_name, fake_runner)
+    monkeypatch.setattr(search_mcp, "_schedule_provider_idle_shutdown", fake_schedule)
+
+    result = await getattr(search_mcp, query_name)("query")
+
+    assert result["answer"] == "ok"
+    assert scheduled == [(0, cdp_url, 600)]
+    assert search_mcp._browser_lifecycle_state(provider)["active_requests"] == 0
+
+
+@pytest.mark.asyncio
+async def test_provider_idle_shutdown_closes_only_when_inactive(monkeypatch):
+    closed = []
+
+    async def fake_close(url):
+        closed.append(url)
+
+    monkeypatch.setattr(search_mcp, "_close_cdp_browser", fake_close)
+    state = {"lock": asyncio.Lock(), "active_requests": 0, "idle_task": object()}
+
+    await search_mcp._provider_idle_shutdown(state, search_mcp.GEMINI_CDP_URL, 0)
+
+    assert closed == [search_mcp.GEMINI_CDP_URL]
+    assert state["idle_task"] is None
 
 
 @pytest.mark.asyncio

@@ -31,10 +31,12 @@
 - `search_all`
 - `search_status`
 
-`research_round` 和 `search_all` 会为八个来源同时生成：
+`research_round` 和 `search_all` 会让七个常规来源同时执行两条通道：
 
 - `general`：公开网络、官方原文和独立报道。
 - `specialized`：各平台擅长的生态定向查询。
+
+Grok 仅执行一条 `specialized` X/Twitter 定向查询，不参加 `general` 通道；额度耗尽时明确返回 `unavailable`，不会把提示词回显误判为回答。
 
 地点、园区和文创项目会自动延伸基础信息、地址交通、开放时间、旅游攻略、团购活动、客流热度、投资运营、运营主体、法人、实际控制人、招商业态和风险争议。可选延伸维度最多 8 个。
 
@@ -119,7 +121,7 @@ python3 -m pytest tests -q
 python3 tests/test_mcp_stdio.py --runtime tools/multi_search_mcp.py
 ```
 
-当前完整测试结果：`160 passed`。Python 3.14 下的警告来自第三方 `pytest_asyncio` 弃用接口，不是产品测试失败。
+当前完整测试结果：`170 passed`。Python 3.14 下的警告来自第三方 `pytest_asyncio` 弃用接口，不是产品测试失败。
 
 本地已部署网关的 20 个认证客户端状态探针结果：20/20 完成，墙钟 0.945 秒，p50 0.506 秒，p95 0.599 秒。公网 Cloudflare 路径的同类探针为 20/20 完成，墙钟 3.145 秒，p50 2.076 秒，p95 2.836 秒。该结果验证鉴权、协议与多客户端接入，不代表 20 个完整八源研究同时执行；完整研究仍由全局 2 槽位公平限流。
 
@@ -154,15 +156,15 @@ python3 scripts/live_concurrency_probe.py \
 
 失败等级不会启用为默认并发上限。
 
-## 八源双通道实测
+## 八源线上验收
 
-对“1970文创园”执行一次八源双通道研究：
+对“OpenAI 2026年7月最新模型发布、官方公告与X平台官方动态”执行一次线上完整研究：
 
-- 墙钟时间：60.196 秒。
-- 豆包、元宝、文心、Tavily、Exa、Grok、千问的两条通道均完成。
-- Gemini 在该次全源联合运行中两条通道均失败；Gemini 独立分级测试的 10 并发通过，因此联合资源竞争或页面状态仍需继续监控。
-- 共保留 94 条唯一引用。
-- `团购活动` 和 `客流热度` 获得直接覆盖；地址交通、开放时间和旅游攻略仍存在证据缺口，调用方不得把自动延伸维度误写成已证实事实。
+- HTTP 200，墙钟时间 67.43 秒。
+- 豆包、元宝、文心、Tavily、Exa（Agent-Reach）、Gemini、千问均为 `complete`。
+- Grok 当前免费额度耗尽，准确返回 `unavailable`；常规通道未启动，只执行一次 X 定向通道。
+- Tavily 保留 10 条网页结果；Exa 已通过 LaunchAgent 的绝对路径/PATH 修复恢复成功。
+- Grok、Gemini、千问任务结束后进入 10 分钟空闲关闭计时。主动关闭验收时的闲置实例后，三者 RSS 从约 5.87 GB 降为 0。
 
 ## 已知边界
 

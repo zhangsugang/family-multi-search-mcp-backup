@@ -417,11 +417,22 @@ async def _doubao_query(query: str, timeout: int = 90,
 
 
 # ================================================================ Tavily
+def _compact_tavily_query(query: str, limit: int = 400) -> str:
+    cleaned = re.sub(r"\s+", " ", query).strip()
+    match = re.search(
+        r"研究问题[:：]\s*(.+?)(?=\s+研究类型[:：]|\s+保留发布日期|$)",
+        cleaned,
+    )
+    if match:
+        cleaned = match.group(1).strip()
+    return cleaned[:limit].rstrip()
+
+
 async def _tavily_query_async(
     query: str,
     max_results: int = 8,
     timeout: float = 25,
-    max_key_attempts: int = 2,
+    max_key_attempts: int | None = None,
 ) -> dict:
     config = get_runtime_config()
     keys = [
@@ -431,7 +442,10 @@ async def _tavily_query_async(
     if not keys:
         raise RuntimeError("未配置 Tavily API key")
 
-    attempts = min(len(keys), max(1, max_key_attempts))
+    attempts = len(keys) if max_key_attempts is None else min(
+        len(keys), max(1, max_key_attempts)
+    )
+    compact_query = _compact_tavily_query(query)
     last_error = "unknown"
     async with httpx.AsyncClient(timeout=httpx.Timeout(timeout)) as client:
         for _ in range(attempts):
@@ -441,13 +455,14 @@ async def _tavily_query_async(
                     "https://api.tavily.com/search",
                     json={
                         "api_key": key,
-                        "query": query,
+                        "query": compact_query,
                         "max_results": max_results,
                         "search_depth": "basic",
                         "include_answer": False,
                     },
                 )
-                if response.status_code in {401, 429} or response.status_code >= 500:
+                if response.status_code in {400, 401, 429, 432} \
+                        or response.status_code >= 500:
                     last_error = f"HTTP {response.status_code}"
                     continue
                 response.raise_for_status()
@@ -581,12 +596,27 @@ async def _yuanbao_query(query: str, timeout: int = 90,
 
 
 # ================================================================ Exa (Agent-Reach)
+_MCPORTER_CANDIDATES = (
+    "/opt/homebrew/bin/mcporter",
+    "/usr/local/bin/mcporter",
+)
+
+
+def _resolve_mcporter() -> str | None:
+    configured = get_runtime_config().get("mcporter_executable", "")
+    candidates = [configured, shutil.which("mcporter"), *_MCPORTER_CANDIDATES]
+    for candidate in candidates:
+        if isinstance(candidate, str) and candidate and os.access(candidate, os.X_OK):
+            return candidate
+    return None
+
+
 async def _exa_query_async(
     query: str,
     num_results: int = 8,
     timeout: float = 55,
 ) -> str:
-    mcporter = shutil.which("mcporter")
+    mcporter = _resolve_mcporter()
     if not mcporter:
         raise RuntimeError("mcporter 未安装（npm i -g mcporter）")
     args = json.dumps({"query": query, "numResults": num_results})
@@ -774,16 +804,23 @@ _COMMUNITY_TRACKING_PARAMETERS = {
 }
 GROK_CDP_URL = "http://127.0.0.1:9555"
 GROK_CDP_PORT = 9555
-_GROK_LIFECYCLE_STATES: weakref.WeakKeyDictionary = weakref.WeakKeyDictionary()
+_BROWSER_LIFECYCLE_STATES: dict[str, weakref.WeakKeyDictionary] = {}
+
+
+def _browser_lifecycle_state(provider_name: str) -> dict:
+    loop = asyncio.get_running_loop()
+    states = _BROWSER_LIFECYCLE_STATES.setdefault(
+        provider_name, weakref.WeakKeyDictionary()
+    )
+    state = states.get(loop)
+    if state is None:
+        state = {"lock": asyncio.Lock(), "active_requests": 0, "idle_task": None}
+        states[loop] = state
+    return state
 
 
 def _grok_lifecycle_state() -> dict:
-    loop = asyncio.get_running_loop()
-    state = _GROK_LIFECYCLE_STATES.get(loop)
-    if state is None:
-        state = {"lock": asyncio.Lock(), "active_requests": 0, "idle_task": None}
-        _GROK_LIFECYCLE_STATES[loop] = state
-    return state
+    return _browser_lifecycle_state("grok")
 
 
 def _chrome_executable() -> str:
@@ -870,23 +907,48 @@ def _community_references(items: object, platform: str) -> list[dict]:
     return references
 
 
+class _GrokQuotaError(RuntimeError):
+    pass
+
+
+_GROK_QUOTA_MARKERS = (
+    "距离限制重置",
+    "等待或升级至 supergrok",
+    "usage limit",
+    "rate limit",
+    "limit resets",
+    "try again later",
+)
+
+
+def _is_grok_quota_text(text: str) -> bool:
+    lowered = text.lower()
+    return any(marker in lowered for marker in _GROK_QUOTA_MARKERS)
+
+
 async def _community_response_text(page, query: str, platform: str) -> str:
+    body = (await page.locator("body").inner_text()).strip()
+    if platform == "x" and _is_grok_quota_text(body):
+        raise _GrokQuotaError("Grok quota unavailable")
     selectors = (
         ("model-response", ".model-response-text", "message-content")
         if platform == "youtube"
-        else ('[data-testid*="message"]', '[class*="message"]', ".prose")
+        else (".prose", '[data-testid*="message"]')
     )
     for selector in selectors:
         locator = page.locator(selector)
         try:
             count = await locator.count()
-            if count:
-                text = (await locator.nth(count - 1).inner_text()).strip()
-                if text:
+            for index in range(count - 1, -1, -1):
+                text = (await locator.nth(index).inner_text()).strip()
+                if text and text != query and not _is_grok_quota_text(text):
                     return text
+        except _GrokQuotaError:
+            raise
         except Exception:
             continue
-    body = (await page.locator("body").inner_text()).strip()
+    if platform == "x":
+        return ""
     return body.split(query, 1)[-1].strip() if query in body else ""
 
 
@@ -898,6 +960,8 @@ async def _wait_for_community_answer(page, query: str, timeout: int,
         await page.wait_for_timeout(1000)
         try:
             answer = await _community_response_text(page, query, platform)
+        except _GrokQuotaError:
+            raise
         except Exception:
             continue
         answer = strip_platform_stream_status(answer)
@@ -963,8 +1027,8 @@ def _ensure_gemini_browser() -> None:
     raise RuntimeError("Gemini 浏览器启动超时")
 
 
-async def _gemini_query(query: str, timeout: int = 120,
-                        progress: dict | None = None) -> dict:
+async def _run_gemini_query(query: str, timeout: int = 120,
+                            progress: dict | None = None) -> dict:
     """Query Gemini on a fresh page in its isolated headless Chrome profile."""
     from playwright.async_api import async_playwright
 
@@ -997,6 +1061,22 @@ async def _gemini_query(query: str, timeout: int = 120,
             }
         finally:
             await page.close()
+
+
+async def _gemini_query(query: str, timeout: int = 120,
+                        progress: dict | None = None) -> dict:
+    """Query Gemini and close its Chrome after ten idle minutes."""
+    state = _browser_lifecycle_state("gemini")
+    async with state["lock"]:
+        _cancel_provider_idle_shutdown(state)
+        state["active_requests"] += 1
+    try:
+        return await _run_gemini_query(query, timeout, progress)
+    finally:
+        async with state["lock"]:
+            state["active_requests"] = max(0, state["active_requests"] - 1)
+            if state["active_requests"] == 0:
+                _schedule_provider_idle_shutdown(state, GEMINI_CDP_URL)
 
 
 def _ensure_grok_browser() -> None:
@@ -1033,13 +1113,29 @@ def _ensure_grok_browser() -> None:
     raise RuntimeError("Grok Chrome CDP 启动超时")
 
 
-async def _close_grok_browser() -> None:
-    """Close the isolated Grok browser through CDP without exposing runtime details."""
+async def _minimize_browser_window(browser, page) -> None:
+    """Minimize a headed provider window without affecting its task page."""
+    try:
+        session = await page.context.new_cdp_session(page)
+        window = await session.send("Browser.getWindowForTarget")
+        await session.send(
+            "Browser.setWindowBounds",
+            {
+                "windowId": window["windowId"],
+                "bounds": {"windowState": "minimized"},
+            },
+        )
+    except Exception:
+        pass
+
+
+async def _close_cdp_browser(cdp_url: str) -> None:
+    """Close one isolated provider browser through CDP."""
     from playwright.async_api import async_playwright
 
     try:
         async with async_playwright() as pw:
-            browser = await pw.chromium.connect_over_cdp(GROK_CDP_URL)
+            browser = await pw.chromium.connect_over_cdp(cdp_url)
             session = await browser.new_browser_cdp_session()
             await session.send("Browser.close")
     except Exception as error:
@@ -1049,13 +1145,19 @@ async def _close_grok_browser() -> None:
         raise
 
 
-async def _grok_idle_shutdown(state: dict, delay_seconds: float = 600) -> None:
-    """Close Grok after an idle interval under loop-local coordination."""
+async def _close_grok_browser() -> None:
+    await _close_cdp_browser(GROK_CDP_URL)
+
+
+async def _provider_idle_shutdown(
+    state: dict, cdp_url: str, delay_seconds: float = 600
+) -> None:
+    """Close a provider browser after an idle interval."""
     await asyncio.sleep(max(0.0, delay_seconds))
     async with state["lock"]:
         if state["active_requests"] == 0:
             state["idle_task"] = None
-            await _close_grok_browser()
+            await _close_cdp_browser(cdp_url)
 
 
 def _consume_background_task_exception(task: asyncio.Task) -> None:
@@ -1067,22 +1169,34 @@ def _consume_background_task_exception(task: asyncio.Task) -> None:
         pass
 
 
-def _schedule_grok_idle_shutdown(state: dict, delay_seconds: float = 600) -> None:
-    """Replace this loop's pending Grok idle timer with a new one."""
+def _schedule_provider_idle_shutdown(
+    state: dict, cdp_url: str, delay_seconds: float = 600
+) -> None:
+    """Replace a provider's pending idle timer with a new one."""
     pending = state["idle_task"]
     if pending is not None and not pending.done():
         pending.cancel()
-    task = asyncio.create_task(_grok_idle_shutdown(state, delay_seconds))
+    task = asyncio.create_task(
+        _provider_idle_shutdown(state, cdp_url, delay_seconds)
+    )
     task.add_done_callback(_consume_background_task_exception)
     state["idle_task"] = task
 
 
-def _cancel_grok_idle_shutdown(state: dict) -> None:
-    """Cancel this loop's pending idle close before starting Grok work."""
+def _schedule_grok_idle_shutdown(state: dict, delay_seconds: float = 600) -> None:
+    _schedule_provider_idle_shutdown(state, GROK_CDP_URL, delay_seconds)
+
+
+def _cancel_provider_idle_shutdown(state: dict) -> None:
+    """Cancel a pending provider close before starting work."""
     pending = state["idle_task"]
     if pending is not None and not pending.done():
         pending.cancel()
     state["idle_task"] = None
+
+
+def _cancel_grok_idle_shutdown(state: dict) -> None:
+    _cancel_provider_idle_shutdown(state)
 
 
 async def _run_grok_query(query: str, timeout: int = 120,
@@ -1094,6 +1208,7 @@ async def _run_grok_query(query: str, timeout: int = 120,
     async with async_playwright() as pw:
         browser = await pw.chromium.connect_over_cdp(GROK_CDP_URL)
         page = await _new_browser_task_page(browser, "Grok")
+        await _minimize_browser_window(browser, page)
         try:
             await page.goto("https://grok.com/", wait_until="domcontentloaded")
             editor = page.locator(
@@ -1103,9 +1218,18 @@ async def _run_grok_query(query: str, timeout: int = 120,
             await editor.click()
             await editor.fill(query)
             await editor.press("Enter")
-            answer, done = await _wait_for_community_answer(
-                page, query, timeout, progress, platform="x"
-            )
+            try:
+                answer, done = await _wait_for_community_answer(
+                    page, query, timeout, progress, platform="x"
+                )
+            except _GrokQuotaError:
+                return {
+                    "status": "unavailable",
+                    "answer": "",
+                    "references": [],
+                    "partial": False,
+                    "conversation_url": getattr(page, "url", ""),
+                }
             links = await page.locator("a[href]").evaluate_all(
                 "els => els.map(a => ({text:(a.innerText||a.getAttribute('aria-label')||'').trim(), href:a.href}))"
             )
@@ -1462,7 +1586,7 @@ async def _qianwen_response_text(page, query: str) -> str:
     return body.rsplit(query, 1)[-1].strip() if query in body else ""
 
 
-async def _qianwen_query(
+async def _run_qianwen_query(
     query: str,
     timeout: int = 90,
     progress: dict | None = None,
@@ -1477,6 +1601,7 @@ async def _qianwen_query(
     async with async_playwright() as pw:
         browser = await pw.chromium.connect_over_cdp(QIANWEN_CDP_URL)
         page = await _new_browser_task_page(browser, "千问")
+        await _minimize_browser_window(browser, page)
         try:
             await page.goto("https://www.qianwen.com/", wait_until="commit")
             editor = await _select_qianwen_editor(page)
@@ -1526,6 +1651,32 @@ async def _qianwen_query(
             }
         finally:
             await page.close()
+
+
+async def _qianwen_query(
+    query: str,
+    timeout: int = 90,
+    progress: dict | None = None,
+    *,
+    policy_intent: str | None = None,
+) -> dict:
+    """Query Qianwen and close its Chrome after ten idle minutes."""
+    state = _browser_lifecycle_state("qianwen")
+    async with state["lock"]:
+        _cancel_provider_idle_shutdown(state)
+        state["active_requests"] += 1
+    try:
+        return await _run_qianwen_query(
+            query,
+            timeout,
+            progress,
+            policy_intent=policy_intent,
+        )
+    finally:
+        async with state["lock"]:
+            state["active_requests"] = max(0, state["active_requests"] - 1)
+            if state["active_requests"] == 0:
+                _schedule_provider_idle_shutdown(state, QIANWEN_CDP_URL)
 
 
 # ================================================================ MCP 工具
@@ -1700,10 +1851,18 @@ def _adapt_provider_result(source_id: str, value: object) -> dict:
     supplied_status = raw.get("status") if isinstance(raw.get("status"), str) else ""
     supplied_status = supplied_status.lower()
     partial = bool(raw.get("partial")) or supplied_status == "partial"
-    if partial:
-        status = "partial"
-    elif supplied_status in {"failed", "timeout"}:
+    has_content = bool(_clean_text(answer)) or bool(references)
+    if supplied_status in {"skipped", "unavailable", "failed", "timeout"}:
         status = supplied_status
+        partial = False
+    elif bool(raw.get("prompt_echo")):
+        status = "failed"
+        partial = False
+    elif partial and has_content:
+        status = "partial"
+    elif not has_content:
+        status = "failed"
+        partial = False
     else:
         status = "complete"
     return {
@@ -1784,9 +1943,11 @@ async def _collect_provider_results(
     timeout: float,
     original_query: str,
     lane_name: str = "single",
+    skipped_sources: set[str] | None = None,
 ) -> dict:
     """Run all registered adapters once within one absolute round deadline."""
     started = time.monotonic()
+    skipped = set(skipped_sources or ())
     provider_budget = _provider_budget(timeout)
     progress = {
         source_id: {}
@@ -1869,6 +2030,7 @@ async def _collect_provider_results(
             runner(), name=f"multi-search:{source_id}:{lane_name}"
         )
         for source_id, runner in runners.items()
+        if source_id not in skipped
     }
     task_list = list(tasks.values())
     try:
@@ -1899,6 +2061,14 @@ async def _collect_provider_results(
 
     records: dict[str, dict] = {}
     for source_id in provider_ids():
+        if source_id in skipped:
+            records[source_id] = {
+                "status": "skipped",
+                "partial": False,
+                "answer": "",
+                "references": [],
+            }
+            continue
         task = tasks[source_id]
         if task in timed_out:
             records[source_id] = _timeout_provider_result(progress.get(source_id, {}))
@@ -1962,11 +2132,16 @@ def _merge_provider_lane_results(general: dict, specialized: dict) -> dict:
                 references[existing_index] = candidate
 
     statuses = (general.get("status"), specialized.get("status"))
-    if statuses == ("complete", "complete"):
+    active_statuses = tuple(item for item in statuses if item != "skipped")
+    if active_statuses and all(item == "complete" for item in active_statuses):
         status = "complete"
+    elif active_statuses and all(item == "unavailable" for item in active_statuses):
+        status = "unavailable"
+    elif not active_statuses:
+        status = "skipped"
     elif answers or references:
         status = "partial"
-    elif statuses == ("timeout", "timeout"):
+    elif active_statuses and all(item == "timeout" for item in active_statuses):
         status = "timeout"
     else:
         status = "failed"
@@ -1999,7 +2174,11 @@ async def _collect_provider_lanes(
     }
     general_task = asyncio.create_task(
         _collect_provider_results(
-            general_queries, timeout, original_query, lane_name="general"
+            general_queries,
+            timeout,
+            original_query,
+            lane_name="general",
+            skipped_sources={"grok"},
         ),
         name="multi-search-lane:general",
     )
@@ -2068,7 +2247,7 @@ def _verification_queue(research: dict) -> list[dict]:
                 )
     for source_id, provider in providers.items():
         status = provider.get("status")
-        if status in {"partial", "failed", "timeout"}:
+        if status in {"partial", "failed", "timeout", "unavailable"}:
             queue.append(
                 {
                     "kind": "provider_gap",

@@ -26,6 +26,7 @@ value = {
     "WorkingDirectory": os.environ["INSTALL_ROOT"],
     "EnvironmentVariables": {
         "MULTI_SEARCH_PRIVATE_ROOT": os.environ["PRIVATE_ROOT"],
+        "PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
         "PYTHONUNBUFFERED": "1",
     },
     "RunAtLoad": True,
