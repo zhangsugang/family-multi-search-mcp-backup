@@ -6,7 +6,15 @@ This native ZCode plugin bundles:
 - Skill `multi-search-remote`;
 - a standard-library REST bridge to the authenticated remote search service.
 
-The plugin does not embed a family Key. Configure the Key first with the portable release installer:
+The easiest installation method is one command. It securely prompts for the family Key:
+
+```bash
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/zhangsugang/family-multi-search-mcp-backup/main/install-zcode.sh)"
+```
+
+The installer registers the Marketplace and plugin in the actual ZCode directories, writes the Key only to a private `0600` file, and creates a reversible backup.
+
+The plugin does not embed a family Key. For manual installation, configure the Key first with the portable release installer:
 
 ```bash
 ./setup.sh --client zcode

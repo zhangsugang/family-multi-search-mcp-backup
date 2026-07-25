@@ -10,7 +10,21 @@ No family Key, provider credential, cookie, browser profile, or tunnel credentia
 
 ## ZCode installation
 
-### 1. Configure the family Key
+### One-command install
+
+Run this command on the new Mac. It securely prompts for the family Key, validates it, registers the Marketplace, installs and enables the plugin, and creates a reversible backup:
+
+```bash
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/zhangsugang/family-multi-search-mcp-backup/main/install-zcode.sh)"
+```
+
+Then fully quit and reopen ZCode, or run `/reload-plugins`.
+
+Re-running the same command updates the installed Marketplace/plugin while preserving a backup of the previous ZCode configuration.
+
+### Manual install
+
+#### 1. Configure the family Key
 
 Download and extract `multi-search-remote-0.3.2.tar.gz` or `.zip` from Releases, then run:
 
@@ -26,7 +40,7 @@ The installer securely prompts for the Key, validates it, and writes:
 
 The directory has mode `0700`; the private file has mode `0600`.
 
-### 2. Install the native ZCode plugin
+#### 2. Install the native ZCode plugin
 
 Open:
 
@@ -44,7 +58,7 @@ Install `family-multi-search`, then restart ZCode or run `/reload-plugins`.
 
 **Do not use `claude plugin` commands for ZCode.** Those commands install into Claude Code's `~/.claude` directory and the plugin will not appear in ZCode.
 
-### 3. Verify
+#### 3. Verify
 
 Open:
 
