@@ -9,7 +9,7 @@ import time
 import urllib.error
 import urllib.request
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 
 DEFAULT_CONFIG = Path.home() / ".config" / "multi-search-remote" / "config.json"
@@ -32,12 +32,12 @@ def load_config(path: Path) -> dict:
     return {"base_url": base_url, "access_key": key}
 
 
-def request(config: dict, method: str, path: str, payload: dict | None = None) -> dict:
+def request(config: dict, method: str, path: str, payload: Optional[dict] = None) -> dict:
     body = None if payload is None else json.dumps(payload).encode("utf-8")
     headers = {
         "Accept": "application/json",
         "Authorization": f"Bearer {config['access_key']}",
-        "User-Agent": "multi-search-remote/0.3.3",
+        "User-Agent": "multi-search-remote/0.3.4",
     }
     if body is not None:
         headers["Content-Type"] = "application/json"
@@ -94,9 +94,11 @@ def main() -> None:
     search = sub.add_parser("search")
     search.add_argument("--query", required=True)
     search.add_argument("--timeout", type=int, default=90)
+    search.add_argument("--mode", choices=("fast", "balanced", "deep"), default="balanced")
     research = sub.add_parser("research")
     research.add_argument("--query", required=True)
-    research.add_argument("--timeout", type=int, default=90)
+    research.add_argument("--timeout", type=int, default=130)
+    research.add_argument("--mode", choices=("fast", "balanced", "deep"), default="deep")
     research.add_argument("--wait", action="store_true")
     get = sub.add_parser("get")
     get.add_argument("request_id")
@@ -104,19 +106,30 @@ def main() -> None:
     cont = sub.add_parser("continue")
     cont.add_argument("request_id")
     cont.add_argument("--query", required=True)
-    cont.add_argument("--timeout", type=int, default=90)
+    cont.add_argument("--timeout", type=int, default=130)
+    cont.add_argument("--mode", choices=("fast", "balanced", "deep"), default="deep")
     sub.add_parser("status")
     args = parser.parse_args()
     config = load_config(args.config.expanduser())
 
     if args.command == "search":
-        value = request(config, "POST", "/v1/search", {"query": args.query, "timeout": args.timeout})
+        value = request(
+            config,
+            "POST",
+            "/v1/search",
+            {"query": args.query, "timeout": args.timeout, "mode": args.mode},
+        )
     elif args.command == "research":
         value = request(
             config,
             "POST",
             "/v1/research",
-            {"query": args.query, "timeout": args.timeout, "wait_seconds": 3},
+            {
+                "query": args.query,
+                "timeout": args.timeout,
+                "wait_seconds": 3,
+                "mode": args.mode,
+            },
         )
     elif args.command == "get":
         value = request(config, "GET", f"/v1/research/{args.request_id}")
@@ -125,7 +138,7 @@ def main() -> None:
             config,
             "POST",
             f"/v1/research/{args.request_id}/continue",
-            {"query": args.query, "timeout": args.timeout},
+            {"query": args.query, "timeout": args.timeout, "mode": args.mode},
         )
     else:
         value = request(config, "GET", "/v1/providers/status")

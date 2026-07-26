@@ -40,7 +40,7 @@ https://github.com/zhangsugang/family-multi-search-mcp-backup
 
 Install `family-multi-search`, then restart ZCode or run `/reload-plugins`. Do not use `claude plugin` commands; they install into Claude Code rather than ZCode.
 
-One family Key may bind up to 10 public IP addresses. Request and research-job limits are isolated by bound address, while the service continues to run two complete research rounds at once and queues additional accepted work fairly.
+One family Key may bind up to 10 public IP addresses. Request and research-job ownership are isolated by bound address. The service runs up to 20 `fast`, 5 `balanced`, or 2 complete `deep` research rounds at once and reports an explicit queue position when a mode is saturated.
 
 Seven providers run general and specialized lanes. Grok is X/Twitter-only and runs one specialized query per research round; quota exhaustion is reported as `unavailable`, not as a successful answer. Tavily rotates through the private five-Key pool, and Exa runs through the Agent-Reach/mcporter chain. Grok, Gemini, and Qianwen browser runtimes close after 10 idle minutes.
 

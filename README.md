@@ -26,7 +26,7 @@ Re-running the same command updates the installed Marketplace/plugin while prese
 
 #### 1. Configure the family Key
 
-Download and extract `multi-search-remote-0.3.3.tar.gz` or `.zip` from Releases, then run:
+Download and extract `multi-search-remote-0.3.4.tar.gz` or `.zip` from Releases, then run:
 
 ```bash
 ./setup.sh --client zcode
@@ -69,6 +69,7 @@ Settings → Plugin Management → Installed → family-multi-search
 Confirm that the plugin is enabled and MCP `family-multi-search` is loaded. It exposes:
 
 - `search_once`
+- `research_round` (legacy deep-mode compatibility alias)
 - `research`
 - `get_research_result`
 - `continue_research`
@@ -82,7 +83,7 @@ Open **Settings → Plugin Management**, refresh the `family-multi-search` Marke
 
 ## WorkBuddy
 
-From the same v0.3.3 release directory:
+From the same v0.3.4 release directory:
 
 ```bash
 ./setup.sh --client workbuddy
@@ -98,8 +99,9 @@ This installs the Skill under `~/.workbuddy/skills` and uses the same private RE
 - Tavily rotates through five private server-side Keys; Exa runs through Agent-Reach/mcporter.
 - Grok, Gemini, and Qianwen browsers close after 10 idle minutes.
 - Each Key may bind up to 10 public IP addresses; only irreversible address digests are stored.
-- Request isolation and one-unfinished-job limits apply per bound address.
-- Two complete research rounds run simultaneously; additional accepted jobs enter a fair FIFO queue.
+- Request isolation and job ownership apply per bound address; each address may hold up to 20 unfinished jobs.
+- Active mode limits are 20 `fast`, 5 `balanced`, or 2 `deep` rounds. Saturated modes return an explicit queue position.
+- The stdio proxy dispatches up to 20 tool calls concurrently instead of serializing them in one process.
 
 Public endpoints:
 

@@ -2,11 +2,14 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
+import threading
 import urllib.error
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 
 PRIVATE_CONFIG = Path.home() / ".config" / "multi-search-remote" / "config.json"
@@ -34,13 +37,13 @@ def load_config() -> dict[str, str]:
     raise RuntimeError("family Key is not configured; run skill/setup.sh --client zcode")
 
 
-def request(method: str, path: str, payload: dict | None = None) -> dict:
+def request(method: str, path: str, payload: Optional[dict] = None) -> dict:
     config = load_config()
     body = None if payload is None else json.dumps(payload).encode("utf-8")
     headers = {
         "Accept": "application/json",
         "Authorization": f"Bearer {config['access_key']}",
-        "User-Agent": "family-multi-search-zcode-proxy/0.3.3",
+        "User-Agent": "family-multi-search-zcode-proxy/0.3.4",
     }
     if body is not None:
         headers["Content-Type"] = "application/json"
@@ -72,6 +75,26 @@ TOOLS = [
                 "max_answer": {"type": "integer", "default": 2200},
                 "max_refs": {"type": "integer", "default": 30},
                 "timeout": {"type": "integer", "default": 90},
+                "mode": {
+                    "type": "string",
+                    "enum": ["fast", "balanced", "deep"],
+                    "default": "balanced",
+                },
+            },
+            "required": ["query"],
+        },
+    },
+    {
+        "name": "research_round",
+        "description": "Compatibility alias for one deep evidence research round.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "query": {"type": "string"},
+                "profile": {"type": "string", "default": "general"},
+                "max_answer": {"type": "integer", "default": 2200},
+                "max_refs": {"type": "integer", "default": 30},
+                "timeout": {"type": "integer", "default": 130},
             },
             "required": ["query"],
         },
@@ -84,8 +107,13 @@ TOOLS = [
             "properties": {
                 "query": {"type": "string"},
                 "profile": {"type": "string", "default": "general"},
-                "timeout": {"type": "integer", "default": 90},
+                "timeout": {"type": "integer", "default": 130},
                 "wait_seconds": {"type": "integer", "default": 3},
+                "mode": {
+                    "type": "string",
+                    "enum": ["fast", "balanced", "deep"],
+                    "default": "deep",
+                },
             },
             "required": ["query"],
         },
@@ -107,7 +135,12 @@ TOOLS = [
             "properties": {
                 "request_id": {"type": "string"},
                 "query": {"type": "string"},
-                "timeout": {"type": "integer", "default": 90},
+                "timeout": {"type": "integer", "default": 130},
+                "mode": {
+                    "type": "string",
+                    "enum": ["fast", "balanced", "deep"],
+                    "default": "deep",
+                },
             },
             "required": ["request_id", "query"],
         },
@@ -123,6 +156,8 @@ TOOLS = [
 def call_tool(name: str, arguments: dict[str, Any]) -> dict:
     if name == "search_once":
         return request("POST", "/v1/search", arguments)
+    if name == "research_round":
+        return request("POST", "/v1/search", {**arguments, "mode": "deep"})
     if name == "research":
         return request("POST", "/v1/research", arguments)
     if name == "get_research_result":
@@ -136,9 +171,23 @@ def call_tool(name: str, arguments: dict[str, Any]) -> dict:
     raise ValueError(f"unknown tool: {name}")
 
 
+_SEND_LOCK = threading.Lock()
+
+
+def _worker_count() -> int:
+    raw = os.environ.get("MULTI_SEARCH_PROXY_WORKERS", "20")
+    try:
+        value = int(raw)
+    except ValueError:
+        return 20
+    return min(64, max(1, value))
+
+
 def send(message: dict) -> None:
-    sys.stdout.write(json.dumps(message, ensure_ascii=False, separators=(",", ":")) + "\n")
-    sys.stdout.flush()
+    payload = json.dumps(message, ensure_ascii=False, separators=(",", ":")) + "\n"
+    with _SEND_LOCK:
+        sys.stdout.write(payload)
+        sys.stdout.flush()
 
 
 def result(request_id: Any, value: dict) -> None:
@@ -159,7 +208,7 @@ def handle(message: dict) -> None:
             {
                 "protocolVersion": protocol,
                 "capabilities": {"tools": {}},
-                "serverInfo": {"name": "family-multi-search", "version": "0.3.3"},
+                "serverInfo": {"name": "family-multi-search", "version": "0.3.4"},
                 "instructions": "Preserve citations, conflicts, unknowns, and confidence explanations.",
             },
         )
@@ -203,13 +252,21 @@ def handle(message: dict) -> None:
 
 
 def main() -> None:
-    for line in sys.stdin:
-        try:
-            message = json.loads(line)
-            if isinstance(message, dict):
-                handle(message)
-        except Exception as exc:
-            error(None, -32700, str(exc))
+    with ThreadPoolExecutor(
+        max_workers=_worker_count(),
+        thread_name_prefix="family-search",
+    ) as executor:
+        for line in sys.stdin:
+            try:
+                message = json.loads(line)
+                if not isinstance(message, dict):
+                    continue
+                if message.get("method") == "tools/call":
+                    executor.submit(handle, message)
+                else:
+                    handle(message)
+            except Exception as exc:
+                error(None, -32700, str(exc))
 
 
 if __name__ == "__main__":
