@@ -1,4 +1,4 @@
-# Multi Search Remote 0.3.4
+# Multi Search Remote 0.3.5
 
 Portable fallback client for the public `family-multi-search` ZCode plugin and for WorkBuddy/Skills-only clients.
 

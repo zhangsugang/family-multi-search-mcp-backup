@@ -42,6 +42,6 @@ Install `family-multi-search`, then restart ZCode or run `/reload-plugins`. Do n
 
 One family Key may bind up to 10 public IP addresses. Request and research-job ownership are isolated by bound address. The service runs up to 20 `fast`, 5 `balanced`, or 2 complete `deep` research rounds at once and reports an explicit queue position when a mode is saturated.
 
-Seven providers run general and specialized lanes. Grok is X/Twitter-only and runs one specialized query per research round; quota exhaustion is reported as `unavailable`, not as a successful answer. Tavily rotates through the private five-Key pool, and Exa runs through the Agent-Reach/mcporter chain. Grok, Gemini, and Qianwen browser runtimes close after 10 idle minutes.
+Seven providers run general and specialized lanes. Grok is X/Twitter-only and runs one specialized query per research round; quota exhaustion is reported as `unavailable`, not as a successful answer. Tavily rotates through the private five-Key pool, and Exa runs through the Agent-Reach/mcporter chain. Fast mode uses only Tavily + Exa and opens no browser processes. Owned Grok, Gemini, and Qianwen runtimes close after 2 idle minutes, while headed tasks are kept behind the user's active application by the server-side focus guard.
 
 No family Key, provider credential, cookie, profile, or private runtime state is stored in this plugin or public repository.

@@ -10,7 +10,7 @@
     {
       "name": "family-multi-search",
       "description": "Eight-source evidence research over a key-protected remote MCP, bundled with the multi-search-remote Skill.",
-      "version": "0.3.4",
+      "version": "0.3.5",
       "author": {
         "name": "Sisyphus"
       },
